@@ -51,8 +51,10 @@ pub struct ResolvedSkill {
 #[derive(Debug, Clone, Serialize)]
 pub struct RenderSkill {
     pub name: String,
+    pub output_name: String,
     pub title: String,
     pub description: String,
+    pub description_yaml: String,
     pub rules: Vec<RenderRule>,
 }
 
@@ -193,12 +195,16 @@ impl Skill {
             });
         }
 
+        let name = required(self.manifest.name.as_deref(), "skill name")?;
+        let description = required(self.manifest.description.as_deref(), "skill description")?;
+
         Ok(ResolvedSkill {
             render: RenderSkill {
-                name: required(self.manifest.name.as_deref(), "skill name")?.to_owned(),
+                name: name.to_owned(),
+                output_name: output_skill_name(name),
                 title: required(self.manifest.title.as_deref(), "skill title")?.to_owned(),
-                description: required(self.manifest.description.as_deref(), "skill description")?
-                    .to_owned(),
+                description: description.to_owned(),
+                description_yaml: yaml_double_quoted(description),
                 rules,
             },
             references,
@@ -363,4 +369,31 @@ fn output_reference_file(file: &str) -> Result<String> {
         .file_name()
         .map(str::to_owned)
         .ok_or_else(|| anyhow!("file '{file}' has no filename"))
+}
+
+fn output_skill_name(name: &str) -> String {
+    if name.ends_with("-rules") {
+        name.to_owned()
+    } else {
+        format!("{name}-rules")
+    }
+}
+
+fn yaml_double_quoted(value: &str) -> String {
+    let mut quoted = String::with_capacity(value.len() + 2);
+    quoted.push('"');
+
+    for ch in value.chars() {
+        match ch {
+            '\\' => quoted.push_str("\\\\"),
+            '"' => quoted.push_str("\\\""),
+            '\n' => quoted.push_str("\\n"),
+            '\r' => quoted.push_str("\\r"),
+            '\t' => quoted.push_str("\\t"),
+            _ => quoted.push(ch),
+        }
+    }
+
+    quoted.push('"');
+    quoted
 }

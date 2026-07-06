@@ -33,7 +33,10 @@ enum Command {
         target: Target,
         #[arg(long)]
         dry_run: bool,
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "Accepted for compatibility; installs overwrite by default"
+        )]
         force: bool,
     },
 }
@@ -92,7 +95,7 @@ fn install(skill_name: &str, target: Target, dry_run: bool, force: bool) -> Resu
     };
 
     for harness in harnesses {
-        let skill_dir = harness.skill_dir(&repo_root, skill_name);
+        let skill_dir = harness.skill_dir(&repo_root, &resolved.render.output_name);
         println!(
             "{} {}",
             if dry_run {
