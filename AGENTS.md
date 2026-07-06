@@ -2,6 +2,10 @@
 
 Guidance for agents working in this repository.
 
+## Skills
+
+This repo installs its own rule packs as `*-rules` skills (e.g. `rust-rules`, `github-actions-rules`). Before writing or reviewing code in a domain covered by one, invoke the matching `*-rules` skill first — match on the skill's own description — then apply its reference rules.
+
 ## Project Shape
 
 `ruleskill` is a Rust CLI that installs agent skills generated from Markdown rule packs. The catalog lives in `rules/`, the MiniJinja template lives in `templates/skill.md.j2`, CLI/source code lives in `src/`, and integration tests live in `tests/cli.rs`.

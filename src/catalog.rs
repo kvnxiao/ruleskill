@@ -5,6 +5,7 @@ use std::fs;
 use anyhow::{anyhow, bail, Context, Result};
 use camino::{Utf8Component, Utf8Path, Utf8PathBuf};
 use serde::{Deserialize, Serialize};
+use strsim::jaro_winkler;
 use walkdir::WalkDir;
 
 use crate::render;
@@ -152,12 +153,31 @@ impl Catalog {
             .skills
             .iter()
             .find(|skill| skill.name() == Some(name))
-            .ok_or_else(|| anyhow!("unknown skill '{name}'"))?;
+            .ok_or_else(|| self.unknown_skill_error(name))?;
 
         let mut errors = Vec::new();
         skill.validate(&self.template, &mut errors);
         finish_validation(&errors)?;
         Ok(skill)
+    }
+
+    fn unknown_skill_error(&self, name: &str) -> anyhow::Error {
+        match self.closest_skill_name(name) {
+            Some(suggestion) => anyhow!("unknown skill '{name}'. Did you mean '{suggestion}'?"),
+            None => {
+                anyhow!("unknown skill '{name}'. Run 'ruleskill list' to see available skills.")
+            }
+        }
+    }
+
+    fn closest_skill_name(&self, name: &str) -> Option<&str> {
+        self.skills
+            .iter()
+            .filter_map(Skill::name)
+            .map(|candidate| (candidate, jaro_winkler(name, candidate)))
+            .filter(|(_, score)| *score >= 0.7)
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(candidate, _)| candidate)
     }
 }
 

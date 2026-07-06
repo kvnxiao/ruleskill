@@ -334,8 +334,74 @@ when = "Read when editing components."
         .stdout(predicate::str::contains("react"));
 }
 
+#[test]
+fn install_without_skill_lists_available_packs() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "rust");
+    seed_pack(&catalog, "github-actions");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .arg("install")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("no skill provided"))
+        .stderr(predicate::str::contains("rust"))
+        .stderr(predicate::str::contains("github-actions"));
+}
+
+#[test]
+fn install_unknown_skill_suggests_closest() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "github-actions");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .args(["install", "github-action"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "unknown skill 'github-action'. Did you mean 'github-actions'?",
+        ));
+}
+
+#[test]
+fn install_unknown_skill_without_close_match() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "github-actions");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .args(["install", "totally-different"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "unknown skill 'totally-different'",
+        ))
+        .stderr(predicate::str::contains("ruleskill list"))
+        .stderr(predicate::str::contains("Did you mean").not());
+}
+
 fn cmd() -> Command {
     Command::cargo_bin("ruleskill").unwrap()
+}
+
+fn seed_pack(catalog: &TempDir, name: &str) {
+    write(
+        catalog.path().join(format!("rules/{name}/skill.toml")),
+        &format!(
+            r#"
+name = "{name}"
+title = "{name} Rules"
+description = "{name} test skill."
+
+[[rules]]
+title = "Example"
+file = "example.md"
+when = "Read when relevant."
+"#
+        ),
+    );
 }
 
 fn minimal_catalog() -> TempDir {
