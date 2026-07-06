@@ -2,28 +2,30 @@
 
 `ruleskill` installs agent skills generated from Markdown rule packs.
 
-Use it to keep reusable engineering rules in one catalog, then render them into tool-specific skill folders for Codex or Claude. The source of truth is `rules/`; generated files are written under `.agents/skills/` or `.claude/skills/`.
+Use it to keep reusable engineering rules in one catalog, then render them into harness-specific skill folders for Codex or Claude Code. The source of truth for rules is in `rules/`; generated files are written under `.agents/skills/` or `.claude/skills/` in the directory that runs `ruleskill install <rule-pack>`.
 
 ## Usage
 
+Install `ruleskill` using `cargo install --path .`.
+
 List available skills:
 
-```powershell
-cargo run -- list
+```sh
+ruleskill list
 ```
 
 Validate the catalog:
 
-```powershell
-cargo run -- validate
+```sh
+ruleskill validate
 ```
 
-Install a skill:
+Install a skill (harness target is auto-detected, unless `--target` is specified):
 
-```powershell
-cargo run -- install rust --target codex
-cargo run -- install github-actions --target claude
-cargo run -- install rust --target all
+```sh
+ruleskill install rust # auto-detect harness target
+ruleskill install github-actions --target claude # specify harness target
+ruleskill install rust --target all # install for all supported harness targets
 ```
 
 Use `--dry-run` to preview writes. Use `--force` only when replacing a non-generated destination.
@@ -32,7 +34,7 @@ Use `--dry-run` to preview writes. Use `--force` only when replacing a non-gener
 
 Useful checks:
 
-```powershell
+```sh
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test
@@ -62,6 +64,6 @@ Keep referenced files inside the skill folder. Avoid duplicate Markdown basename
 
 After editing `rules/` or `templates/`, run:
 
-```powershell
-cargo run -- validate
+```sh
+ruleskill validate
 ```
