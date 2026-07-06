@@ -9,17 +9,17 @@ use walkdir::WalkDir;
 
 use crate::render;
 
-pub const CATALOG_DIR_ENV: &str = "RULESKILL_CATALOG_DIR";
+const CATALOG_DIR_ENV: &str = "RULESKILL_CATALOG_DIR";
 
 #[derive(Debug)]
-pub struct Catalog {
+pub(crate) struct Catalog {
     root: Utf8PathBuf,
     template: String,
     skills: Vec<Skill>,
 }
 
 #[derive(Debug)]
-pub struct Skill {
+pub(crate) struct Skill {
     folder_name: String,
     dir: Utf8PathBuf,
     manifest_path: Utf8PathBuf,
@@ -43,41 +43,41 @@ struct RuleManifest {
 }
 
 #[derive(Debug, Clone)]
-pub struct ResolvedSkill {
-    pub render: RenderSkill,
-    pub references: Vec<ResolvedReference>,
+pub(crate) struct ResolvedSkill {
+    pub(crate) render: RenderSkill,
+    pub(crate) references: Vec<ResolvedReference>,
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct RenderSkill {
-    pub name: String,
-    pub output_name: String,
-    pub title: String,
-    pub description: String,
-    pub description_yaml: String,
-    pub rules: Vec<RenderRule>,
+pub(crate) struct RenderSkill {
+    name: String,
+    pub(crate) output_name: String,
+    title: String,
+    description: String,
+    description_yaml: String,
+    rules: Vec<RenderRule>,
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct RenderRule {
-    pub title: String,
-    pub file: String,
-    pub when: String,
-    pub reference_file: String,
+struct RenderRule {
+    title: String,
+    file: String,
+    when: String,
+    reference_file: String,
 }
 
 #[derive(Debug, Clone)]
-pub struct ResolvedReference {
-    pub source: Utf8PathBuf,
-    pub reference_file: String,
+pub(crate) struct ResolvedReference {
+    pub(crate) source: Utf8PathBuf,
+    pub(crate) reference_file: String,
 }
 
 impl Catalog {
-    pub fn load_default() -> Result<Self> {
+    pub(crate) fn load_default() -> Result<Self> {
         Self::load(default_catalog_root()?)
     }
 
-    pub fn load(root: Utf8PathBuf) -> Result<Self> {
+    pub(crate) fn load(root: Utf8PathBuf) -> Result<Self> {
         let template_path = root.join("templates").join("skill.md.j2");
         let template = fs::read_to_string(&template_path)
             .with_context(|| format!("failed to read template at {template_path}"))?;
@@ -88,11 +88,7 @@ impl Catalog {
         }
 
         let mut skills = Vec::new();
-        for entry in WalkDir::new(&rules_dir)
-            .min_depth(2)
-            .max_depth(2)
-            .into_iter()
-        {
+        for entry in WalkDir::new(&rules_dir).min_depth(2).max_depth(2) {
             let entry = entry.with_context(|| format!("failed to walk {rules_dir}"))?;
             let is_manifest =
                 entry.path().file_name().and_then(|name| name.to_str()) == Some("skill.toml");
@@ -131,27 +127,27 @@ impl Catalog {
         })
     }
 
-    pub fn root(&self) -> &Utf8Path {
+    pub(crate) fn root(&self) -> &Utf8Path {
         &self.root
     }
 
-    pub fn template(&self) -> &str {
+    pub(crate) fn template(&self) -> &str {
         &self.template
     }
 
-    pub fn skills(&self) -> &[Skill] {
+    pub(crate) fn skills(&self) -> &[Skill] {
         &self.skills
     }
 
-    pub fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         let mut errors = Vec::new();
         for skill in &self.skills {
             skill.validate(&self.template, &mut errors);
         }
-        finish_validation(errors)
+        finish_validation(&errors)
     }
 
-    pub fn find_validated_skill(&self, name: &str) -> Result<&Skill> {
+    pub(crate) fn find_validated_skill(&self, name: &str) -> Result<&Skill> {
         let skill = self
             .skills
             .iter()
@@ -160,21 +156,21 @@ impl Catalog {
 
         let mut errors = Vec::new();
         skill.validate(&self.template, &mut errors);
-        finish_validation(errors)?;
+        finish_validation(&errors)?;
         Ok(skill)
     }
 }
 
 impl Skill {
-    pub fn display_name(&self) -> &str {
+    pub(crate) fn display_name(&self) -> &str {
         self.name().unwrap_or(&self.folder_name)
     }
 
-    pub fn name(&self) -> Option<&str> {
+    pub(crate) fn name(&self) -> Option<&str> {
         non_empty(self.manifest.name.as_deref())
     }
 
-    pub fn resolve(&self) -> Result<ResolvedSkill> {
+    pub(crate) fn resolve(&self) -> Result<ResolvedSkill> {
         let mut rules = Vec::with_capacity(self.manifest.rules.len());
         let mut references = Vec::with_capacity(self.manifest.rules.len());
 
@@ -297,7 +293,7 @@ impl Skill {
             {
                 Ok(_) => {}
                 Err(err) => {
-                    local_errors.push(format!("{subject} template rendering failed: {err:#}"))
+                    local_errors.push(format!("{subject} template rendering failed: {err:#}"));
                 }
             }
         }
@@ -306,7 +302,7 @@ impl Skill {
     }
 }
 
-pub fn default_catalog_root() -> Result<Utf8PathBuf> {
+fn default_catalog_root() -> Result<Utf8PathBuf> {
     if let Some(root) = env::var_os(CATALOG_DIR_ENV) {
         return Utf8PathBuf::from_path_buf(root.into())
             .map_err(|path| anyhow!("catalog path is not valid UTF-8: {}", path.display()));
@@ -315,7 +311,7 @@ pub fn default_catalog_root() -> Result<Utf8PathBuf> {
     Ok(Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")))
 }
 
-fn finish_validation(errors: Vec<String>) -> Result<()> {
+fn finish_validation(errors: &[String]) -> Result<()> {
     if errors.is_empty() {
         Ok(())
     } else {

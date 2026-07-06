@@ -28,7 +28,7 @@ ruleskill install github-actions --target claude # specify harness target
 ruleskill install rust --target all # install for all supported harness targets
 ```
 
-Use `--dry-run` to preview writes. Use `--force` only when replacing a non-generated destination.
+Use `--dry-run` to preview writes. `--force` is accepted for compatibility and currently does not change overwrite behavior.
 
 ## Development
 

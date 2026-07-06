@@ -3,7 +3,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use clap::ValueEnum;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-pub enum Target {
+pub(crate) enum Target {
     Auto,
     Codex,
     Claude,
@@ -11,20 +11,20 @@ pub enum Target {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Harness {
+pub(crate) enum Harness {
     Codex,
     Claude,
 }
 
 impl Harness {
-    pub fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Codex => "codex",
             Self::Claude => "claude",
         }
     }
 
-    pub fn skill_dir(self, repo_root: &Utf8Path, skill_name: &str) -> Utf8PathBuf {
+    pub(crate) fn skill_dir(self, repo_root: &Utf8Path, skill_name: &str) -> Utf8PathBuf {
         match self {
             Self::Codex => repo_root.join(".agents").join("skills").join(skill_name),
             Self::Claude => repo_root.join(".claude").join("skills").join(skill_name),
@@ -32,7 +32,7 @@ impl Harness {
     }
 }
 
-pub fn resolve_target(target: Target, repo_root: &Utf8Path) -> Result<Vec<Harness>> {
+pub(crate) fn resolve_target(target: Target, repo_root: &Utf8Path) -> Result<Vec<Harness>> {
     match target {
         Target::Auto => {
             let detected = detect_harnesses(repo_root);
@@ -49,7 +49,7 @@ pub fn resolve_target(target: Target, repo_root: &Utf8Path) -> Result<Vec<Harnes
     }
 }
 
-pub fn detect_harnesses(repo_root: &Utf8Path) -> Vec<Harness> {
+fn detect_harnesses(repo_root: &Utf8Path) -> Vec<Harness> {
     let mut harnesses = Vec::new();
 
     if repo_root.join(".agents").exists()

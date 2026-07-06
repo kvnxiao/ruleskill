@@ -5,6 +5,8 @@ mod render;
 
 use std::env;
 use std::fs as std_fs;
+use std::io::{self, Write};
+use std::process::ExitCode;
 
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
@@ -41,10 +43,13 @@ enum Command {
     },
 }
 
-fn main() {
-    if let Err(err) = run() {
-        eprintln!("error: {err:#}");
-        std::process::exit(1);
+fn main() -> ExitCode {
+    match run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(err) => {
+            let _ = writeln!(io::stderr().lock(), "error: {err:#}");
+            ExitCode::FAILURE
+        }
     }
 }
 
@@ -64,8 +69,9 @@ fn run() -> Result<()> {
 
 fn list() -> Result<()> {
     let catalog = Catalog::load_default()?;
+    let mut stdout = io::stdout().lock();
     for skill in catalog.skills() {
-        println!("{}", skill.display_name());
+        writeln!(stdout, "{}", skill.display_name()).context("failed to write command output")?;
     }
     Ok(())
 }
@@ -73,11 +79,13 @@ fn list() -> Result<()> {
 fn validate() -> Result<()> {
     let catalog = Catalog::load_default()?;
     catalog.validate()?;
-    println!(
+    writeln!(
+        io::stdout().lock(),
         "validated {} skill(s) in {}",
         catalog.skills().len(),
         catalog.root()
-    );
+    )
+    .context("failed to write command output")?;
     Ok(())
 }
 
@@ -93,10 +101,12 @@ fn install(skill_name: &str, target: Target, dry_run: bool, force: bool) -> Resu
     } else {
         WriteMode::Write
     };
+    let mut stdout = io::stdout().lock();
 
     for harness in harnesses {
         let skill_dir = harness.skill_dir(&repo_root, &resolved.render.output_name);
-        println!(
+        writeln!(
+            stdout,
             "{} {}",
             if dry_run {
                 "would install"
@@ -104,10 +114,11 @@ fn install(skill_name: &str, target: Target, dry_run: bool, force: bool) -> Resu
                 "installing"
             },
             harness.name()
-        );
+        )
+        .context("failed to write command output")?;
 
         let report = write_generated(&skill_dir.join("SKILL.md"), &skill_md, mode, force)?;
-        print_report(&report);
+        print_report(&report, &mut stdout)?;
 
         for reference in &resolved.references {
             let source = std_fs::read_to_string(&reference.source)
@@ -119,19 +130,20 @@ fn install(skill_name: &str, target: Target, dry_run: bool, force: bool) -> Resu
                 mode,
                 force,
             )?;
-            print_report(&report);
+            print_report(&report, &mut stdout)?;
         }
     }
 
     Ok(())
 }
 
-fn print_report(report: &crate::fs::WriteReport) {
-    if report.dry_run {
-        println!("would write {}", report.path);
+fn print_report(report: &crate::fs::WriteReport, output: &mut impl Write) -> Result<()> {
+    let result = if report.dry_run {
+        writeln!(output, "would write {}", report.path)
     } else {
-        println!("wrote {}", report.path);
-    }
+        writeln!(output, "wrote {}", report.path)
+    };
+    result.context("failed to write command output")
 }
 
 fn current_dir_utf8() -> Result<Utf8PathBuf> {

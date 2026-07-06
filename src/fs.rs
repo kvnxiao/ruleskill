@@ -4,18 +4,18 @@ use anyhow::{Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WriteMode {
+pub(crate) enum WriteMode {
     Write,
     DryRun,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WriteReport {
-    pub path: Utf8PathBuf,
-    pub dry_run: bool,
+pub(crate) struct WriteReport {
+    pub(crate) path: Utf8PathBuf,
+    pub(crate) dry_run: bool,
 }
 
-pub fn write_generated(
+pub(crate) fn write_generated(
     path: &Utf8Path,
     content: &str,
     mode: WriteMode,

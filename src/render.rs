@@ -3,7 +3,7 @@ use minijinja::Environment;
 
 use crate::catalog::RenderSkill;
 
-pub fn render_skill(template: &str, skill: &RenderSkill) -> Result<String> {
+pub(crate) fn render_skill(template: &str, skill: &RenderSkill) -> Result<String> {
     let mut env = Environment::new();
     env.add_template("skill.md.j2", template)
         .context("failed to load skill template")?;
@@ -16,6 +16,6 @@ pub fn render_skill(template: &str, skill: &RenderSkill) -> Result<String> {
     Ok(rendered)
 }
 
-pub fn generated_reference(source: &str) -> String {
+pub(crate) fn generated_reference(source: &str) -> String {
     source.to_owned()
 }

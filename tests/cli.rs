@@ -51,6 +51,34 @@ when = "Always."
 }
 
 #[test]
+fn validate_rejects_rule_files_outside_rule_pack() {
+    let catalog = minimal_catalog();
+    write(catalog.path().join("rules/outside.md"), "# Outside\n");
+    write(
+        catalog.path().join("rules/escape/skill.toml"),
+        r#"
+name = "escape"
+title = "Escape"
+description = "Traversal test."
+
+[[rules]]
+title = "Outside"
+file = "../outside.md"
+when = "Always."
+"#,
+    );
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .arg("validate")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "must stay inside the skill folder",
+        ));
+}
+
+#[test]
 fn validate_fails_for_invalid_names() {
     let catalog = minimal_catalog();
     write(
@@ -314,7 +342,7 @@ fn minimal_catalog() -> TempDir {
     let catalog = TempDir::new().unwrap();
     write(
         catalog.path().join("templates/skill.md.j2"),
-        r#"---
+        r"---
 name: {{ output_name }}
 description: {{ description_yaml }}
 ---
@@ -326,7 +354,7 @@ description: {{ description_yaml }}
 {% for rule in rules -%}
 - {{ rule.title }}: references/{{ rule.reference_file }}
 {% endfor %}
-"#,
+",
     );
     fs::create_dir_all(catalog.path().join("rules")).unwrap();
     catalog

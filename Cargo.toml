@@ -2,6 +2,17 @@
 name = "ruleskill"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.95"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -2 }
+print_stdout = "warn"
+print_stderr = "warn"
+dbg_macro = "warn"
+exit = "warn"
+get_unwrap = "warn"
+rc_mutex = "warn"
+iter_over_hash_type = "warn"
 
 [dependencies]
 anyhow = "1.0.103"
