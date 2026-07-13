@@ -1,0 +1,53 @@
+name = "rust"
+title = "Rust Rules"
+description = "Use for Rust implementation, review, API design, testing, error handling, dependencies, documentation, linting, formatting, performance, and workspace structure."
+
+[[rules]]
+title = "API design"
+file = "rust-api-design.md"
+when = "Read when adding or reviewing public APIs, constructors, traits, macros, unsafe code, features, or no_std behavior."
+
+[[rules]]
+title = "Code quality"
+file = "rust-code-quality.md"
+when = "Read when implementing or reviewing Rust code for maintainability, idioms, module shape, naming, and readability."
+
+[[rules]]
+title = "Defensive programming"
+file = "rust-defensive-programming.md"
+when = "Read when handling invariants, input validation, panics, assertions, boundaries, and failure modes."
+
+[[rules]]
+title = "Dependencies"
+file = "rust-dependencies.md"
+when = "Read when adding, updating, configuring, or evaluating Rust crate dependencies and feature flags."
+
+[[rules]]
+title = "Documentation"
+file = "rust-documentation.md"
+when = "Read when writing or reviewing docs, examples, crate-level docs, public API docs, and README guidance."
+
+[[rules]]
+title = "Error handling"
+file = "rust-error-handling.md"
+when = "Read when designing or reviewing Result types, error enums, context, propagation, panics, and diagnostics."
+
+[[rules]]
+title = "Lints and formatting"
+file = "rust-lints-and-formatting.md"
+when = "Read when configuring or responding to rustfmt, clippy, lint levels, CI checks, and style rules."
+
+[[rules]]
+title = "Performance"
+file = "rust-performance.md"
+when = "Read when optimizing Rust code, reducing allocations, choosing data structures, or reviewing hot paths."
+
+[[rules]]
+title = "Testing"
+file = "rust-testing.md"
+when = "Read when adding, refactoring, or reviewing unit tests, integration tests, fixtures, property tests, and test ergonomics."
+
+[[rules]]
+title = "Workspaces"
+file = "rust-workspaces.md"
+when = "Read when changing Cargo workspace structure, package boundaries, crate metadata, features, or shared configuration."

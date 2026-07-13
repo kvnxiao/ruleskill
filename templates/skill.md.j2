@@ -1,0 +1,14 @@
+---
+name: {{ output_name }}
+description: {{ description_yaml }}
+---
+
+# {{ title }}
+
+{{ description }}
+
+## Rule References
+
+{% for rule in rules -%}
+- [{{ rule.title }}](references/{{ rule.reference_file }}): {{ rule.when }}
+{% endfor %}

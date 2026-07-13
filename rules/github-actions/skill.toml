@@ -1,0 +1,8 @@
+name = "github-actions"
+title = "GitHub Actions Rules"
+description = "Use for authoring and reviewing GitHub Actions workflows, especially action version pinning and update policy."
+
+[[rules]]
+title = "GitHub Actions versioning"
+file = "github-actions-versioning.md"
+when = "Read when authoring or editing files under .github/workflows/."

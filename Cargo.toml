@@ -1,0 +1,30 @@
+[package]
+name = "ruleskill"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.95"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -2 }
+print_stdout = "warn"
+print_stderr = "warn"
+dbg_macro = "warn"
+exit = "warn"
+get_unwrap = "warn"
+rc_mutex = "warn"
+iter_over_hash_type = "warn"
+
+[dependencies]
+anyhow = "1.0.103"
+camino = "1.2.2"
+clap = { version = "4.6.1", features = ["derive"] }
+minijinja = "2.21.0"
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "1.1.2"
+walkdir = "2.5.0"
+
+[dev-dependencies]
+assert_cmd = "2.2.2"
+assert_fs = "1.1.4"
+predicates = "3.1.4"
+insta = "1.48.0"
