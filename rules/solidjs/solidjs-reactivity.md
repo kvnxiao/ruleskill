@@ -57,7 +57,7 @@ createEffect(on(a, (v) => console.log(v, b()), { defer: true }));
 
 ## `await` Breaks Tracking
 
-Only signal reads before the first `await` are tracked; reads after it are silently untracked, so the effect stops re-running. Never fetch data in an async effect; use `createResource` or `createAsync` (see the data fetching rules).
+Only signal reads before the first `await` are tracked; reads after it are silently untracked, so the effect stops re-running. Never fetch data in an async effect; use TanStack Query or `createResource` (see the data fetching rules).
 
 ```tsx
 // Bad: `filter()` is read after await and is not tracked

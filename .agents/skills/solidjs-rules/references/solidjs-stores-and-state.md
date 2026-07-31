@@ -39,9 +39,9 @@ setState(produce((s) => {
 }));
 ```
 
-## Reconcile Server Snapshots
+## Reconcile Wholesale Replacements
 
-When replacing store data wholesale (typically a server response), wrap it in `reconcile` so unchanged parts keep identity and only real changes propagate. Items match by `id` by default; pass `key` for a different field.
+Server state normally lives in the TanStack Query cache, not in stores (see the data fetching rules). When external data does land in a store wholesale — a websocket snapshot, a polled payload outside the cache — wrap it in `reconcile` so unchanged parts keep identity and only real changes propagate. Items match by `id` by default; pass `key` for a different field.
 
 ```tsx
 setState("todos", reconcile(fetchedTodos));

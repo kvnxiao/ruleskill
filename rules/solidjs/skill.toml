@@ -1,6 +1,6 @@
 name = "solidjs"
 title = "SolidJS Rules"
-description = "Use for SolidJS implementation and review: reactivity, components and props, control flow, stores and state, data fetching, lifecycle and refs, testing, TypeScript, and React-to-Solid migration."
+description = "Use for SolidJS implementation, review, and architecture decisions: reactivity, components and props, component file conventions, control flow, stores and state, state architecture and business logic separation, ecosystem and library choices, data fetching, forms, lifecycle and refs, testing, TypeScript, and React-to-Solid migration."
 paths = "**/*.tsx,**/*.jsx,**/*.ts,**/*.js"
 
 [[rules]]
@@ -34,9 +34,19 @@ file = "solidjs-state-architecture.md"
 when = "Read when deciding where state and business logic live: state modules, actions and selectors, or component-local UI state."
 
 [[rules]]
+title = "Ecosystem"
+file = "solidjs-ecosystem.md"
+when = "Read when choosing or adding libraries, targeting Solid versions, or setting up routing, SSR, headless UI, tables, virtualization, timing utilities, hotkeys, or devtools."
+
+[[rules]]
 title = "Data fetching"
 file = "solidjs-data-fetching.md"
-when = "Read when fetching async data with createResource or createAsync, or wiring Suspense and ErrorBoundary."
+when = "Read when fetching or mutating server state with TanStack Query, wiring Suspense and ErrorBoundary, integrating router loaders, or using createResource."
+
+[[rules]]
+title = "Forms"
+file = "solidjs-forms.md"
+when = "Read when building or reviewing forms, validation schemas, or form submission flows."
 
 [[rules]]
 title = "Lifecycle and refs"

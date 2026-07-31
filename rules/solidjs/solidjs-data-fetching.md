@@ -1,71 +1,110 @@
 ---
 paths: **/*.{ts,tsx,js,jsx}
-description: "SolidJS async data rules; createResource over async effects, source gating, Suspense/ErrorBoundary composition, mutate/refetch, and solid-router query/createAsync."
+description: "SolidJS server-state rules; TanStack Query with queryOptions factories in domain modules, no destructuring of query results, Suspense/ErrorBoundary composition, mutations as domain options, router loader integration, and createResource as the low-level fallback."
 ---
 
 # Data Fetching
 
-## `createResource`, Not Async Effects
+## TanStack Query Owns Server State
 
-Async effects silently lose tracking after the first `await` and handle neither races nor loading states. `createResource` integrates with `Suspense` and `ErrorBoundary`, re-fetches when its source changes, and exposes `data()`, `data.loading`, `data.error`, `data.latest`, plus `mutate` and `refetch`.
+Server data lives in the Query cache — not fetched ad hoc in components, and never copied into stores. Raw `fetch` in an effect loses tracking after the first `await` and handles neither races, caching, deduplication, nor retries. `useQuery` from `@tanstack/solid-query` is the default for reads; its `data` is backed by a Solid resource, so Suspense and transitions work out of the box.
 
 ```tsx
 // Bad
 createEffect(async () => setUser(await fetchUser(userId())));
 
 // Good
-const [user, { mutate, refetch }] = createResource(userId, fetchUser);
+const user = useQuery(() => userQueryOptions(userId()));
 ```
 
-## Gate Fetching Through the Source
+## Define `queryOptions` in Domain Modules
 
-The source is reactive: when it changes, the fetcher re-runs with the new value. When the source is `null`, `undefined`, or `false`, the fetcher is skipped; that is the idiomatic "don't fetch until ready".
+Query keys, fetchers, and staleness policy are business decisions; house them in the domain module (see the state architecture rules) as `queryOptions` factories. Components, router loaders, and `queryClient` calls all consume the same factory, so keys can never drift.
+
+```ts
+// src/state/todos.ts
+import { queryOptions } from "@tanstack/solid-query";
+
+export function todosQueryOptions(filter: TodoFilter) {
+  return queryOptions({
+    queryKey: ["todos", filter],
+    queryFn: () => api.fetchTodos(filter),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+```
+
+## Options In as a Function, Results Out Fine-Grained
+
+`useQuery` takes an accessor returning options — signals read inside it are tracked, and changes re-key or re-run the query. Gate dependent queries with `enabled` instead of conditional calls. The result is a fine-grained store: read `query.data`, `query.isPending`, `query.isError` as properties inside tracking scopes, and never destructure it.
 
 ```tsx
-const [user] = createResource(() => session()?.userId, fetchUser);
-```
+const [todo, setTodo] = createSignal(0);
 
-Throw from the fetcher on non-ok responses so errors reach `ErrorBoundary` and `data.error`.
+const todoQuery = useQuery(() => ({
+  ...todoQueryOptions(todo()),
+  enabled: todo() > 0,
+}));
+
+// Bad: destructuring severs reactivity, exactly like props and stores
+const { data, isPending } = useQuery(() => todosQueryOptions("all"));
+```
 
 ## Compose `ErrorBoundary` Outside, `Suspense` Inside
 
-Reading a loading resource under a `Suspense` shows the fallback; a fetcher error propagates to the nearest `ErrorBoundary`.
+Reading `query.data` under a `Suspense` boundary triggers the fallback while loading. Set `throwOnError: true` to surface fetch errors to the nearest `ErrorBoundary`; otherwise render states explicitly with `<Switch>` on `isPending`/`isError`.
 
 ```tsx
-<ErrorBoundary fallback={<p>Couldn't load recipes.</p>}>
+<ErrorBoundary fallback={<p>Couldn't load todos.</p>}>
   <Suspense fallback={<p>Loading…</p>}>
-    <For each={recipes()}>{(r) => <Recipe recipe={r} />}</For>
+    <For each={todos.data}>{(todo) => <TodoRow todo={todo} />}</For>
   </Suspense>
 </ErrorBoundary>
 ```
 
-Without Suspense, render states explicitly with `<Show when={data.loading}>` and `<Match when={data.error}>`.
+## Mutations Are Domain Logic
 
-## `mutate` for Optimistic Updates, `refetch` for Reload
+`useMutation` also takes function-wrapped options. What a mutation does — the request, optimistic update, rollback, and which queries it invalidates — is business logic and belongs in the domain module via `mutationOptions`; the component only calls `mutation.mutate`.
 
-```tsx
-mutate((posts) => [...(posts ?? []), newPost]); // optimistic
-await refetch();                                 // manual reload
+```ts
+// src/state/todos.ts
+import { mutationOptions, type QueryClient } from "@tanstack/solid-query";
 
-const timer = setInterval(refetch, 30_000);      // polling
-onCleanup(() => clearInterval(timer));
+export function addTodoMutationOptions(queryClient: QueryClient) {
+  return mutationOptions({
+    mutationFn: (todo: NewTodo) => api.addTodo(todo),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ["todos"] }),
+  });
+}
 ```
 
-## In Routed Apps, Prefer `query` + `createAsync`
+```tsx
+const queryClient = useQueryClient();
+const addTodo = useMutation(() => addTodoMutationOptions(queryClient));
 
-With solid-router (and SolidStart), `query(fn, "key")` deduplicates and caches; `createAsync(() => getRecipes())` consumes it as a fine-grained async signal; a route `preload` starts fetching during navigation before the component renders. This is the modern replacement for many `createResource` uses in routed apps.
+<button onClick={() => addTodo.mutate(draft())}>Add</button>
+```
+
+## Integrate the Router Through the Cache
+
+Put the `QueryClient` in router context and warm the cache in loaders with `ensureQueryData`; the component subscribes with `useQuery` on the same options factory. With `defaultPreload: "intent"`, hover and focus start fetching before navigation.
 
 ```tsx
-import { createAsync, query } from "@solidjs/router";
+export const Route = createFileRoute("/todos")({
+  loader: ({ context: { queryClient } }) =>
+    queryClient.ensureQueryData(todosQueryOptions("all")),
+  component: TodosPage,
+});
 
-const getRecipes = query(async () => {
-  const res = await fetch("/api/recipes");
-  if (!res.ok) throw new Error("failed to fetch recipes");
-  return res.json() as Promise<Recipe[]>;
-}, "recipes");
-
-const Recipes: Component = () => {
-  const recipes = createAsync(() => getRecipes());
-  return <For each={recipes()}>{(r) => <Recipe recipe={r} />}</For>;
+const TodosPage: Component = () => {
+  const todos = useQuery(() => todosQueryOptions("all"));
+  return <For each={todos.data}>{(todo) => <TodoRow todo={todo} />}</For>;
 };
 ```
+
+Route hooks return accessors in the Solid adapter — `Route.useParams()`, `Route.useSearch()`, and `Route.useLoaderData()` are called as functions (`params().postId`).
+
+## `createResource` Is the Low-Level Fallback
+
+For library code and contexts without a `QueryClient`, `createResource(source, fetcher)` remains correct: a source of `null`/`undefined`/`false` skips the fetcher, changes re-run it, and `data.loading`/`data.error` plus `mutate`/`refetch` cover local needs. It is the primitive solid-query itself builds on — use it when pulling in the full cache is unjustified, not as the default for application server state.

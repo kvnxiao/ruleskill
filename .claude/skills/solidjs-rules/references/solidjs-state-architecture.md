@@ -108,13 +108,18 @@ const CouponField: Component = () => {
 
 Business derivations (totals, filters, validity) are exported memos or accessors on the module. A component that recomputes them re-encodes business rules in the view, and sibling views drift apart.
 
-## Async Belongs to Actions
+## Server State Belongs to the Query Cache
 
-Server mutations, optimistic updates, and rollback logic live inside actions (`checkout` above). For reads, `createResource`/`createAsync` sources can live in the state module under the same root, or at route level via `query` + `preload`; either way the component only renders the result.
+Server reads and writes go through TanStack Query (see the data fetching rules): domain modules export `queryOptions` and `mutationOptions` factories, and components consume them with `useQuery`/`useMutation`. Do not copy query data into stores — the cache is the source of truth for server state, and state modules hold client business state only. Module actions remain the home for client-side workflows and for the domain logic mutations delegate to (validation, optimistic-update shaping, multi-step orchestration like `checkout` above).
 
-## SSR Instantiates via Context
+## When Context Enters
 
-A module-level singleton is the default for client-only apps. Under SSR it leaks state across requests, so keep the same `createCart` factory but instantiate it in a provider and expose it through a throwing accessor hook (see the stores and state rules); components are unaffected because they only ever see the returned API shape.
+Context is not a state manager under this architecture; it is an instancing and injection mechanism. Modules answer "the only instance"; context answers "which instance". A module singleton stays the default for app-wide business state in client-only apps. Keep the same factory and deliver it through a provider with a throwing accessor hook (mechanics in the stores and state rules) when:
+
+- **SSR**: a module singleton is shared across concurrent requests on the server, leaking one user's state into another's. Instantiate the factory once per request in a root provider; components are unaffected because they only ever see the returned API shape.
+- **Per-subtree instances**: state that is one-per-region rather than one-per-app — each wizard's progress, each editor pane, each data grid's sort and filter state. A provider per subtree gives every instance its own factory result where a module singleton would force sharing.
+- **Dependency injection**: swapping the implementation a subtree sees — an API client carrying session auth, feature flags, or a stub state module in tests and stories — without module-mocking machinery.
+- **Compound components**: parent/child families (Tabs/Tab, Accordion/Item) sharing private coordination state. That is UI state scoped to the family and inherently multi-instance; it never belongs in a state module.
 
 ## Test Modules Without Rendering
 

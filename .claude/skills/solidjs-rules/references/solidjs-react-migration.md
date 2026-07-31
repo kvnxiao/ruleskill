@@ -24,7 +24,7 @@ Solid's JSX looks like React, but the model is inverted: components run once and
 | --- | --- |
 | Dependency arrays on effects/memos | Auto-tracked; use `on()` for explicit or deferred dependencies |
 | `useEffect` to derive state from state | Derive: `const b = () => f(a())` |
-| Async effects for data fetching | `createResource` / `createAsync`; tracking breaks after `await` |
+| Async effects for data fetching | TanStack Query (`useQuery`) or `createResource`; tracking breaks after `await` |
 | Returning a cleanup function from an effect | `onCleanup(fn)` inside the effect |
 | `useCallback` / `useMemo` / `React.memo` for referential stability | Unnecessary; closures are stable because components run once, and equal signal writes do not propagate |
 | Rules-of-hooks contortions (no conditionals, top-level only) | Primitives may be created in conditionals, loops, or outside components (given an owner) |
