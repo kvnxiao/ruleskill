@@ -52,16 +52,25 @@ setState("todos", reconcile(fetchedTodos));
 Use context for per-subtree instances and SSR-safe injection; the state architecture rules govern when to reach for it over a module singleton. Create the signals or store inside the provider component, and expose a hook that throws when the provider is missing. A `createContext` default silently masks a missing provider.
 
 ```tsx
+interface CounterValue {
+  count: Accessor<number>;
+  increment: () => void;
+}
+
 const CounterContext = createContext<CounterValue>();
 
-export function CounterProvider(props: ParentProps) {
+export const CounterProvider: ParentComponent = (props) => {
   const [count, setCount] = createSignal(0);
+  const value: CounterValue = {
+    count,
+    increment: () => setCount((c) => c + 1),
+  };
   return (
-    <CounterContext.Provider value={{ count, setCount }}>
+    <CounterContext.Provider value={value}>
       {props.children}
     </CounterContext.Provider>
   );
-}
+};
 
 export function useCounter() {
   const ctx = useContext(CounterContext);
@@ -69,6 +78,8 @@ export function useCounter() {
   return ctx;
 }
 ```
+
+The provider exposes named verbs, not the raw setter — the same write-API discipline as state modules.
 
 ## Global State Needs a Root
 

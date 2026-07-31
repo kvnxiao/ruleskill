@@ -36,7 +36,7 @@ export function todosQueryOptions(filter: TodoFilter) {
 
 ## Options In as a Function, Results Out Fine-Grained
 
-`useQuery` takes an accessor returning options — signals read inside it are tracked, and changes re-key or re-run the query. Gate dependent queries with `enabled` instead of conditional calls. The result is a fine-grained store: read `query.data`, `query.isPending`, `query.isError` as properties inside tracking scopes, and never destructure it.
+This is the pack-wide adapter convention (see the ecosystem rules); for Query specifically: `useQuery` takes an accessor returning options — signals read inside it are tracked, and changes re-key or re-run the query. Gate dependent queries with `enabled` instead of conditional calls. The result is a fine-grained store: read `query.data`, `query.isPending`, `query.isError` as properties inside tracking scopes, and never destructure it.
 
 ```tsx
 const [todo, setTodo] = createSignal(0);
@@ -104,6 +104,17 @@ const TodosPage: Component = () => {
 ```
 
 Route hooks return accessors in the Solid adapter — `Route.useParams()`, `Route.useSearch()`, and `Route.useLoaderData()` are called as functions (`params().postId`).
+
+## Split Code at Routes, Transition Between States
+
+Route-level code splitting uses TanStack Router's lazy route files: move a route's component into `posts.lazy.tsx` with `createLazyFileRoute` while the loader and route config stay eager. For component-level splitting, `lazy(() => import("./HeavyEditor"))` from `solid-js` renders under the same `Suspense` boundaries as data — the `React.lazy` habit maps directly. When a signal change swaps Suspense-bound content (tab switches, filter changes), wrap the write in `useTransition` from `solid-js` to keep the current UI visible instead of flashing fallbacks.
+
+```tsx
+const [pending, start] = useTransition();
+<button onClick={() => start(() => setTab("stats"))} data-pending={pending()}>
+  Stats
+</button>
+```
 
 ## `createResource` Is the Low-Level Fallback
 

@@ -23,7 +23,7 @@ const Icon: VoidComponent<IconProps> = (props) => <svg>{/* … */}</svg>;
 
 - `ParentComponent<P>` / `ParentProps<P>` add `children?: JSX.Element`.
 - `VoidComponent<P>` forbids children.
-- `FlowComponent<P>` requires function children, control-flow style.
+- `FlowComponent<P, C>` requires children; set `C` to a function type for control-flow-style render callbacks.
 - Return type is `JSX.Element`, which already covers elements, arrays, strings, numbers, and null.
 
 ## Pass Accessors, Not Values

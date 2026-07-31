@@ -38,13 +38,18 @@ function createCart() {
     );
   }
 
-  async function checkout() {
-    const order = await api.checkout(state.items);
+  async function applyCoupon(code: string) {
+    const discount = await api.validateCoupon(code);
+    setState("items", {}, "price", (price) => price * discount);
+  }
+
+  async function checkout(details?: CheckoutDetails) {
+    const order = await api.checkout(state.items, details);
     setState("items", []);
     return order;
   }
 
-  return { items: () => state.items, itemCount, total, addItem, checkout };
+  return { items: () => state.items, itemCount, total, addItem, applyCoupon, checkout };
 }
 
 export const cart = createRoot(createCart);

@@ -34,20 +34,27 @@ await user.click(button);
 expect(screen.getByText("Count: 1")).toBeInTheDocument();
 ```
 
-## Providers via `wrapper`, Routes via `location`
+## Providers via `wrapper`, Routes via a Memory Router
 
 ```tsx
 render(() => <Profile />, {
   wrapper: (props) => <AuthProvider>{props.children}</AuthProvider>,
 });
 
-// Router: render the route and start at a location; the router lazy-loads,
-// so the first query must be an async findBy*
-render(() => <Route path="/article/:id" component={Article} />, {
-  location: "/article/12345",
+// TanStack Router: render a real router over memory history; routing is
+// async, so the first query must be an async findBy*
+import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/solid-router";
+
+const router = createRouter({
+  routeTree,
+  history: createMemoryHistory({ initialEntries: ["/article/12345"] }),
 });
+
+render(() => <RouterProvider router={router} />);
 await screen.findByRole("heading");
 ```
+
+The testing library's `location` render option is `@solidjs/router`-only and does not apply to this stack.
 
 ## `renderHook` for Primitives
 

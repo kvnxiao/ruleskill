@@ -1,5 +1,5 @@
 ---
-paths: **/*.{tsx,jsx,ts}
+paths: **/*.{ts,tsx,js,jsx}
 description: "TanStack Form rules for SolidJS; headless form modules owning formOptions, schema validation, and submission, with components rendering accessor-shaped fields and narrow subscriptions."
 ---
 
@@ -61,8 +61,10 @@ const CheckoutForm: Component = () => {
               onBlur={field().handleBlur}
               onInput={(e) => field().handleChange(e.currentTarget.value)}
             />
-            <Show when={field().state.meta.errors.length > 0}>
-              <em>{field().state.meta.errors.join(", ")}</em>
+            <Show when={!field().state.meta.isValid}>
+              <em>
+                {field().state.meta.errors.map((e) => e?.message).join(", ")}
+              </em>
             </Show>
           </>
         )}

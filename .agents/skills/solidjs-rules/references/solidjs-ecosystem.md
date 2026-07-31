@@ -24,7 +24,7 @@ For every concern below, reach for the TanStack Solid adapter before any alterna
 | Debounce, throttle, queue | `@tanstack/solid-pacer` | `createDebouncedSignal`, `createThrottler`, async variants | beta |
 | Client-first sync, live queries | `@tanstack/solid-db` | `createCollection`, `useLiveQuery` | beta |
 | Keyboard shortcuts | `@tanstack/solid-hotkeys` | `createHotkey`, `createHotkeySequence`, `HotkeysProvider` | alpha |
-| AI chat and agents | `@tanstack/ai-solid` | `useChat`, `useGeneration` | beta |
+| AI chat and agents | `@tanstack/ai-solid` | `useChat` (accessor-shaped: `messages()`, `isLoading()`) | beta |
 | Devtools shell | `@tanstack/solid-devtools` | `<TanStackDevtools plugins={…} />` hosting per-library panels | alpha |
 
 `@tanstack/solid-charts` exists but is pre-alpha with an unstable API; do not adopt it without an explicit decision.
@@ -46,7 +46,7 @@ The Solid adapters share conventions that differ from their React counterparts; 
 - Reactive options are passed as accessor functions: `useQuery(() => ({ queryKey: ["todos", filter()], … }))`, `createForm(() => ({ … }))`. Signals read inside re-trigger the library.
 - Reactive data crossing into a plain options object goes through a getter: `createSolidTable({ get data() { return rows() }, columns })`. Passing `data: rows()` snapshots the signal once.
 - Returned objects are fine-grained stores or accessors: read `query.data` and `query.isPending` as properties inside tracking scopes, call `field()` and `Route.useLoaderData()()` where the adapter returns accessors, and never destructure results.
-- Read signals inside library callbacks, not before them: `useLiveQuery((q) => q.from(todos).where(() => filter()))` re-runs on change; hoisting the read outside the callback freezes it.
+- Read signals inside library callbacks, not before them: `useLiveQuery((q) => q.from({ todos: todoCollection }).where(({ todos }) => gt(todos.priority, minPriority())))` re-runs when `minPriority` changes; hoisting the read outside the callback freezes it.
 - Prefer the `use*` entry points in solid-query; the `create*` names are legacy aliases.
 
 ## Internationalization: Paraglide JS
