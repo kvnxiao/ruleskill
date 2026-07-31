@@ -14,6 +14,11 @@ file = "solidjs-components-and-props.md"
 when = "Read when writing or reviewing components, props handling, defaults, prop forwarding, or children."
 
 [[rules]]
+title = "Component conventions"
+file = "solidjs-component-conventions.md"
+when = "Read when creating or organizing component files: exports per file, component declaration style, and props type naming."
+
+[[rules]]
 title = "Control flow"
 file = "solidjs-control-flow.md"
 when = "Read when rendering conditionals or lists in JSX, or choosing between Show, For, Index, Switch, Dynamic, and Portal."

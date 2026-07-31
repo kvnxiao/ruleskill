@@ -64,8 +64,8 @@ const getRecipes = query(async () => {
   return res.json() as Promise<Recipe[]>;
 }, "recipes");
 
-function Recipes() {
+const Recipes: Component = () => {
   const recipes = createAsync(() => getRecipes());
   return <For each={recipes()}>{(r) => <Recipe recipe={r} />}</For>;
-}
+};
 ```

@@ -14,20 +14,23 @@ A component body is a setup script, not a render function. It never re-runs, so 
 An `if`/`return` in the body evaluates once and freezes the decision forever. Put conditionals in JSX with `<Show>` or `<Switch>`.
 
 ```tsx
-// Bad: loading is checked once; the component never re-renders past the spinner
-function Profile(props) {
-  if (props.loading) return <Spinner />;
-  return <div>{props.user.name}</div>;
+interface ProfileProps {
+  loading: boolean;
+  user: User;
 }
 
+// Bad: loading is checked once; the component never re-renders past the spinner
+const Profile: Component<ProfileProps> = (props) => {
+  if (props.loading) return <Spinner />;
+  return <div>{props.user.name}</div>;
+};
+
 // Good
-function Profile(props) {
-  return (
-    <Show when={!props.loading} fallback={<Spinner />}>
-      <div>{props.user.name}</div>
-    </Show>
-  );
-}
+const Profile: Component<ProfileProps> = (props) => (
+  <Show when={!props.loading} fallback={<Spinner />}>
+    <div>{props.user.name}</div>
+  </Show>
+);
 ```
 
 ## Never Destructure Props
@@ -50,14 +53,18 @@ Default-parameter destructuring breaks reactivity; rest-spread destructuring doe
 
 ```tsx
 // Bad
-function Button({ size = "md", ...rest }) {}
+const Button = ({ size = "md", ...rest }) => {};
 
 // Good
-function Button(props) {
+interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+  size?: "sm" | "md" | "lg";
+}
+
+const Button: ParentComponent<ButtonProps> = (props) => {
   const merged = mergeProps({ size: "md" }, props);
   const [local, rest] = splitProps(merged, ["size", "children"]);
   return <button data-size={local.size} {...rest}>{local.children}</button>;
-}
+};
 ```
 
 ## Resolve Children With the `children` Helper
@@ -67,10 +74,10 @@ function Button(props) {
 ```tsx
 import { children } from "solid-js";
 
-function List(props) {
+const List: ParentComponent = (props) => {
   const resolved = children(() => props.children);
   return <ul>{resolved.toArray().map((child) => <li>{child}</li>)}</ul>;
-}
+};
 ```
 
 ## Switch Components With `<Dynamic>`
