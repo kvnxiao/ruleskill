@@ -1,6 +1,6 @@
 ---
 paths: **/*.{ts,tsx,js,jsx}
-description: "Blessed SolidJS 1.x library stack; the TanStack Solid adapters, stable-line version pinning against Solid 2.0 betas, headless UI via Kobalte, and cross-cutting adapter conventions."
+description: "Blessed SolidJS 1.x library stack; the TanStack Solid adapters, stable-line version pinning against Solid 2.0 betas, solid-ui vendored components on Kobalte + corvu, Paraglide JS i18n, and cross-cutting adapter conventions."
 ---
 
 # Ecosystem
@@ -48,6 +48,15 @@ The Solid adapters share conventions that differ from their React counterparts; 
 - Returned objects are fine-grained stores or accessors: read `query.data` and `query.isPending` as properties inside tracking scopes, call `field()` and `Route.useLoaderData()()` where the adapter returns accessors, and never destructure results.
 - Read signals inside library callbacks, not before them: `useLiveQuery((q) => q.from(todos).where(() => filter()))` re-runs on change; hoisting the read outside the callback freezes it.
 - Prefer the `use*` entry points in solid-query; the `create*` names are legacy aliases.
+
+## Internationalization: Paraglide JS
+
+`@inlang/paraglide-js` (2.x) is the i18n library. It is compiler-first: messages compile to tree-shakeable, fully typed functions (`m.greeting({ name })`), so type safety comes from codegen rather than runtime lookups, and the runtime is framework-agnostic — no Solid adapter is needed beyond `paraglideVitePlugin`.
+
+- Messages are plain typed functions, callable from components and domain modules alike; there is no hook to thread through the UI layer.
+- With TanStack Start, follow the TanStack Router repo's `start-i18n-paraglide` Solid example: `paraglideMiddleware` on the server, router `rewrite` with `localizeUrl`/`deLocalizeUrl`, and a strategy array like `["url", "cookie", "preferredLanguage", "baseLocale"]`.
+- Locale switching is a full document navigation by design — `setLocale()` navigates or reloads so `<html lang>`, SSR state, and URLs stay in sync. Do not convert locale changes into signal-driven re-renders in URL-routed apps; the `setLocale(locale, { reload: false })` + `overwriteGetLocale(localeSignal)` escape hatch is only for fully client-rendered surfaces whose strategy excludes `url`.
+- Do not use solid-i18next (archived upstream). `@solid-primitives/i18n` is the fallback only when instant in-app locale switching with fine-grained reactivity outweighs generated message types.
 
 ## Do Not Confuse the Stores
 

@@ -36,7 +36,7 @@ when = "Read when deciding where state and business logic live: state modules, a
 [[rules]]
 title = "Ecosystem"
 file = "solidjs-ecosystem.md"
-when = "Read when choosing or adding libraries, targeting Solid versions, or setting up routing, SSR, headless UI, tables, virtualization, timing utilities, hotkeys, or devtools."
+when = "Read when choosing or adding libraries, targeting Solid versions, or setting up routing, SSR, headless UI, tables, virtualization, timing utilities, hotkeys, i18n, or devtools."
 
 [[rules]]
 title = "Data fetching"
