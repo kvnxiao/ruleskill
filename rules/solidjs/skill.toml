@@ -1,0 +1,49 @@
+name = "solidjs"
+title = "SolidJS Rules"
+description = "Use for SolidJS implementation and review: reactivity, components and props, control flow, stores and state, data fetching, lifecycle and refs, testing, TypeScript, and React-to-Solid migration."
+paths = "**/*.tsx,**/*.jsx,**/*.ts,**/*.js"
+
+[[rules]]
+title = "Reactivity"
+file = "solidjs-reactivity.md"
+when = "Read when creating or reviewing signals, memos, effects, derived state, batch/untrack, or reactive ownership."
+
+[[rules]]
+title = "Components and props"
+file = "solidjs-components-and-props.md"
+when = "Read when writing or reviewing components, props handling, defaults, prop forwarding, or children."
+
+[[rules]]
+title = "Control flow"
+file = "solidjs-control-flow.md"
+when = "Read when rendering conditionals or lists in JSX, or choosing between Show, For, Index, Switch, Dynamic, and Portal."
+
+[[rules]]
+title = "Stores and state"
+file = "solidjs-stores-and-state.md"
+when = "Read when managing nested or shared state with createStore, produce, reconcile, context, or global state."
+
+[[rules]]
+title = "Data fetching"
+file = "solidjs-data-fetching.md"
+when = "Read when fetching async data with createResource or createAsync, or wiring Suspense and ErrorBoundary."
+
+[[rules]]
+title = "Lifecycle and refs"
+file = "solidjs-lifecycle-and-refs.md"
+when = "Read when using onMount, onCleanup, element refs, or integrating imperative and third-party code."
+
+[[rules]]
+title = "Testing"
+file = "solidjs-testing.md"
+when = "Read when adding or reviewing tests for SolidJS components, primitives, or reactive behavior."
+
+[[rules]]
+title = "TypeScript"
+file = "solidjs-typescript.md"
+when = "Read when typing components, props, signals, events, or refs, or configuring TypeScript for Solid."
+
+[[rules]]
+title = "React to Solid migration"
+file = "solidjs-react-migration.md"
+when = "Read when porting React code or React habits to SolidJS, or reviewing Solid code written by React developers."

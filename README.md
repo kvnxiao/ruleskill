@@ -53,12 +53,15 @@ The manifest `name` must match the folder name and use kebab-case:
 name = "my-skill"
 title = "My Skill"
 description = "Use when working on this kind of task."
+paths = "**/*.ext,**/other/**" # optional
 
 [[rules]]
 title = "Rule title"
 file = "rule-file.md"
 when = "Read when this rule applies."
 ```
+
+The optional `paths` field is a comma-separated list of glob patterns rendered into the generated skill frontmatter. Harnesses that support path-based activation (Claude Code) auto-load the skill when files matching the patterns are read or edited; other harnesses ignore the field.
 
 Keep referenced files inside the skill folder. Avoid duplicate Markdown basenames within a single skill because generated references are flattened by filename.
 

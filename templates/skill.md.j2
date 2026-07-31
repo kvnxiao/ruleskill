@@ -1,6 +1,9 @@
 ---
 name: {{ output_name }}
 description: {{ description_yaml }}
+{%- if paths_yaml %}
+paths: {{ paths_yaml }}
+{%- endif %}
 ---
 
 # {{ title }}

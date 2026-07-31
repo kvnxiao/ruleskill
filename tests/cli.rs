@@ -13,7 +13,8 @@ fn list_discovers_seeded_skills() {
         .assert()
         .success()
         .stdout(predicate::str::contains("github-actions"))
-        .stdout(predicate::str::contains("rust"));
+        .stdout(predicate::str::contains("rust"))
+        .stdout(predicate::str::contains("solidjs"));
 }
 
 #[test]
@@ -22,7 +23,7 @@ fn validate_passes_for_seeded_skills() {
         .arg("validate")
         .assert()
         .success()
-        .stdout(predicate::str::contains("validated 2 skill(s)"));
+        .stdout(predicate::str::contains("validated 3 skill(s)"));
 }
 
 #[test]
@@ -335,6 +336,93 @@ when = "Read when editing components."
 }
 
 #[test]
+fn install_renders_paths_frontmatter_only_when_set() {
+    let catalog = paths_template_catalog();
+    write(
+        catalog.path().join("rules/with-paths/skill.toml"),
+        r#"
+name = "with-paths"
+title = "With Paths"
+description = "Paths test skill."
+paths = "**/*.tsx,**/*.ts"
+
+[[rules]]
+title = "Example"
+file = "example.md"
+when = "Read when relevant."
+"#,
+    );
+    write(catalog.path().join("rules/with-paths/example.md"), "# Ex\n");
+    write(
+        catalog.path().join("rules/without-paths/skill.toml"),
+        r#"
+name = "without-paths"
+title = "Without Paths"
+description = "No paths test skill."
+
+[[rules]]
+title = "Example"
+file = "example.md"
+when = "Read when relevant."
+"#,
+    );
+    write(
+        catalog.path().join("rules/without-paths/example.md"),
+        "# Ex\n",
+    );
+
+    let repo = TempDir::new().unwrap();
+    for pack in ["with-paths", "without-paths"] {
+        cmd()
+            .env("RULESKILL_CATALOG_DIR", catalog.path())
+            .current_dir(repo.path())
+            .args(["install", pack, "--target", "claude"])
+            .assert()
+            .success();
+    }
+
+    assert_file_starts_with(
+        repo.path().join(".claude/skills/with-paths-rules/SKILL.md"),
+        "---\nname: with-paths-rules\ndescription: \"Paths test skill.\"\npaths: \"**/*.tsx,**/*.ts\"\n---",
+    );
+    assert_file_does_not_contain(
+        repo.path()
+            .join(".claude/skills/without-paths-rules/SKILL.md"),
+        "paths:",
+    );
+}
+
+#[test]
+fn validate_fails_for_blank_paths() {
+    let catalog = minimal_catalog();
+    write(
+        catalog.path().join("rules/blank-paths/skill.toml"),
+        r#"
+name = "blank-paths"
+title = "Blank Paths"
+description = "Blank paths test."
+paths = "  "
+
+[[rules]]
+title = "Example"
+file = "example.md"
+when = "Read when relevant."
+"#,
+    );
+    write(
+        catalog.path().join("rules/blank-paths/example.md"),
+        "# Ex\n",
+    );
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .arg("validate")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("paths must be non-empty when set"));
+}
+
+#[test]
 fn install_without_skill_lists_available_packs() {
     let catalog = minimal_catalog();
     seed_pack(&catalog, "rust");
@@ -420,6 +508,25 @@ description: {{ description_yaml }}
 {% for rule in rules -%}
 - {{ rule.title }}: references/{{ rule.reference_file }}
 {% endfor %}
+",
+    );
+    fs::create_dir_all(catalog.path().join("rules")).unwrap();
+    catalog
+}
+
+fn paths_template_catalog() -> TempDir {
+    let catalog = TempDir::new().unwrap();
+    write(
+        catalog.path().join("templates/skill.md.j2"),
+        r"---
+name: {{ output_name }}
+description: {{ description_yaml }}
+{%- if paths_yaml %}
+paths: {{ paths_yaml }}
+{%- endif %}
+---
+
+# {{ title }}
 ",
     );
     fs::create_dir_all(catalog.path().join("rules")).unwrap();

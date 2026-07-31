@@ -18,7 +18,7 @@ Install the CLI locally with `cargo install --path .`. The installed CLI command
 
 During development, the same commands can be run with `cargo run -- <command>`.
 
-Current input rule packs are `rust` and `github-actions`. Output skill folders are named from the manifest name with a `-rules` suffix unless the name already ends in `-rules`, so these install as `rust-rules` and `github-actions-rules`.
+Current input rule packs are `rust`, `github-actions`, and `solidjs`. Output skill folders are named from the manifest name with a `-rules` suffix unless the name already ends in `-rules`, so these install as `rust-rules`, `github-actions-rules`, and `solidjs-rules`.
 
 The default catalog root is the crate root from `CARGO_MANIFEST_DIR`. `RULESKILL_CATALOG_DIR` can point the CLI at a fixture catalog instead. Installs write into the current working directory, not the catalog directory.
 
@@ -39,7 +39,7 @@ Use `cargo fmt` to fix formatting before re-running `cargo fmt --check`.
 
 Each rule pack lives under `rules/<rule-pack>/skill.toml`; the catalog loader scans `rules/*/skill.toml`. The folder name and manifest `name` must match and must be kebab-case.
 
-Every `skill.toml` needs `name`, `title`, `description`, and at least one `[[rules]]` entry. Each rule needs `title`, `file`, and `when`.
+Every `skill.toml` needs `name`, `title`, `description`, and at least one `[[rules]]` entry. Each rule needs `title`, `file`, and `when`. An optional top-level `paths` field (comma-separated globs) is rendered into the generated skill frontmatter so harnesses with path-based activation (Claude Code) auto-load the skill when matching files are touched; it must be non-empty when set.
 
 Rule file paths must be relative paths that stay inside their rule pack folder. Duplicate rule file paths are invalid. Generated reference files flatten to the source filename, so two rule files with the same basename in one rule pack will collide even if they are in different subdirectories.
 

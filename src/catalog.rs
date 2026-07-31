@@ -32,6 +32,7 @@ struct SkillManifest {
     name: Option<String>,
     title: Option<String>,
     description: Option<String>,
+    paths: Option<String>,
     #[serde(default)]
     rules: Vec<RuleManifest>,
 }
@@ -56,6 +57,7 @@ pub(crate) struct RenderSkill {
     title: String,
     description: String,
     description_yaml: String,
+    paths_yaml: Option<String>,
     rules: Vec<RenderRule>,
 }
 
@@ -221,6 +223,7 @@ impl Skill {
                 title: required(self.manifest.title.as_deref(), "skill title")?.to_owned(),
                 description: description.to_owned(),
                 description_yaml: yaml_double_quoted(description),
+                paths_yaml: non_empty(self.manifest.paths.as_deref()).map(yaml_double_quoted),
                 rules,
             },
             references,
@@ -251,6 +254,14 @@ impl Skill {
         }
         if non_empty(self.manifest.description.as_deref()).is_none() {
             local_errors.push(format!("{subject} description is required"));
+        }
+        if self
+            .manifest
+            .paths
+            .as_deref()
+            .is_some_and(|paths| paths.trim().is_empty())
+        {
+            local_errors.push(format!("{subject} paths must be non-empty when set"));
         }
         if self.manifest.rules.is_empty() {
             local_errors.push(format!(
