@@ -29,6 +29,11 @@ file = "solidjs-stores-and-state.md"
 when = "Read when managing nested or shared state with createStore, produce, reconcile, context, or global state."
 
 [[rules]]
+title = "State architecture"
+file = "solidjs-state-architecture.md"
+when = "Read when deciding where state and business logic live: state modules, actions and selectors, or component-local UI state."
+
+[[rules]]
 title = "Data fetching"
 file = "solidjs-data-fetching.md"
 when = "Read when fetching async data with createResource or createAsync, or wiring Suspense and ErrorBoundary."

@@ -49,7 +49,7 @@ setState("todos", reconcile(fetchedTodos));
 
 ## Context: Provider-Created State, Throwing Accessor
 
-Create the signals or store inside the provider component, and expose a hook that throws when the provider is missing. A `createContext` default silently masks a missing provider.
+Use context for per-subtree instances and SSR-safe injection; the state architecture rules govern when to reach for it over a module singleton. Create the signals or store inside the provider component, and expose a hook that throws when the provider is missing. A `createContext` default silently masks a missing provider.
 
 ```tsx
 const CounterContext = createContext<CounterValue>();
@@ -72,11 +72,4 @@ export function useCounter() {
 
 ## Global State Needs a Root
 
-Module-level singletons are acceptable in client-only Solid, but computations created at module scope leak without an owner; wrap them in `createRoot`. Use context instead of module state when per-subtree instances are needed or the app server-renders, because module state leaks across SSR requests.
-
-```tsx
-export const counter = createRoot(() => {
-  const [count, setCount] = createSignal(0);
-  return { count, setCount };
-});
-```
+Computations created at module scope leak and warn without an owner; wrap module-level state in `createRoot`. Module shape — exported accessors and named actions with private setters — and the choice between module singletons and context providers are governed by the state architecture rules.

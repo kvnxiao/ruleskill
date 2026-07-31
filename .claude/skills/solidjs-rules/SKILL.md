@@ -15,6 +15,7 @@ Use for SolidJS implementation and review: reactivity, components and props, con
 - [Component conventions](references/solidjs-component-conventions.md): Read when creating or organizing component files: exports per file, component declaration style, and props type naming.
 - [Control flow](references/solidjs-control-flow.md): Read when rendering conditionals or lists in JSX, or choosing between Show, For, Index, Switch, Dynamic, and Portal.
 - [Stores and state](references/solidjs-stores-and-state.md): Read when managing nested or shared state with createStore, produce, reconcile, context, or global state.
+- [State architecture](references/solidjs-state-architecture.md): Read when deciding where state and business logic live: state modules, actions and selectors, or component-local UI state.
 - [Data fetching](references/solidjs-data-fetching.md): Read when fetching async data with createResource or createAsync, or wiring Suspense and ErrorBoundary.
 - [Lifecycle and refs](references/solidjs-lifecycle-and-refs.md): Read when using onMount, onCleanup, element refs, or integrating imperative and third-party code.
 - [Testing](references/solidjs-testing.md): Read when adding or reviewing tests for SolidJS components, primitives, or reactive behavior.
