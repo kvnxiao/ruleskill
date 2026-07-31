@@ -30,7 +30,7 @@ enum Command {
     List,
     Validate,
     Install {
-        skill_name: String,
+        skill_name: Option<String>,
         #[arg(long, value_enum, default_value_t = Target::Auto)]
         target: Target,
         #[arg(long)]
@@ -63,7 +63,7 @@ fn run() -> Result<()> {
             target,
             dry_run,
             force,
-        } => install(&skill_name, target, dry_run, force),
+        } => install(skill_name.as_deref(), target, dry_run, force),
     }
 }
 
@@ -89,8 +89,17 @@ fn validate() -> Result<()> {
     Ok(())
 }
 
-fn install(skill_name: &str, target: Target, dry_run: bool, force: bool) -> Result<()> {
+fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool) -> Result<()> {
     let catalog = Catalog::load_default()?;
+    let Some(skill_name) = skill_name else {
+        let mut msg = String::from("no skill provided; available skills:");
+        for skill in catalog.skills() {
+            msg.push_str("\n  ");
+            msg.push_str(skill.display_name());
+        }
+        msg.push_str("\nusage: ruleskill install <SKILL_NAME>");
+        return Err(anyhow!(msg));
+    };
     let skill = catalog.find_validated_skill(skill_name)?;
     let resolved = skill.resolve()?;
     let skill_md = render_skill(catalog.template(), &resolved.render)?;

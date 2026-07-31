@@ -510,6 +510,7 @@ dependencies = [
  "minijinja",
  "predicates",
  "serde",
+ "strsim",
  "toml",
  "walkdir",
 ]

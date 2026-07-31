@@ -20,6 +20,7 @@ camino = "1.2.2"
 clap = { version = "4.6.1", features = ["derive"] }
 minijinja = "2.21.0"
 serde = { version = "1.0.228", features = ["derive"] }
+strsim = "0.11"
 toml = "1.1.2"
 walkdir = "2.5.0"
 

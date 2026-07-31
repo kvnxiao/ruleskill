@@ -1,6 +1,7 @@
 ---
 name: github-actions-rules
 description: "Use for authoring and reviewing GitHub Actions workflows, especially action version pinning and update policy."
+paths: ".github/workflows/**"
 ---
 
 # GitHub Actions Rules
