@@ -26,7 +26,7 @@ when = "Read when rendering conditionals or lists in JSX, or choosing between Sh
 [[rules]]
 title = "Stores and state"
 file = "solidjs-stores-and-state.md"
-when = "Read when managing nested or shared state with createStore, produce, reconcile, context, or global state."
+when = "Read when managing nested or shared state with createStore, produce, reconcile, context, or global state, or when store or query data crosses a boundary that needs raw objects (structuredClone, IPC, serialization) and must be unwrapped."
 
 [[rules]]
 title = "State architecture"
