@@ -1,6 +1,6 @@
 name = "solidjs"
 title = "SolidJS Rules"
-description = "Use for SolidJS implementation, review, and architecture decisions: reactivity, components and props, component file conventions, control flow, stores and state, state architecture and business logic separation, ecosystem and library choices, data fetching, forms, lifecycle and refs, testing, TypeScript, and React-to-Solid migration."
+description = "Use for SolidJS implementation, review, and architecture decisions: reactivity, components and props, component file conventions, control flow, stores and state, state architecture and business logic separation, ecosystem and library choices, data fetching, forms, i18n and locale handling, lifecycle and refs, testing, TypeScript, and React-to-Solid migration."
 paths = "**/*.tsx,**/*.jsx,**/*.ts,**/*.js"
 
 [[rules]]
@@ -47,6 +47,11 @@ when = "Read when fetching or mutating server state with TanStack Query, wiring 
 title = "Forms"
 file = "solidjs-forms.md"
 when = "Read when building or reviewing forms, validation schemas, or form submission flows."
+
+[[rules]]
+title = "Internationalization"
+file = "solidjs-i18n.md"
+when = "Read when adding or reviewing i18n: Paraglide JS strategy arrays and locale detection, locale switching, middleware and request context, custom strategies, or @solid-primitives/i18n dictionaries and translators."
 
 [[rules]]
 title = "Lifecycle and refs"
