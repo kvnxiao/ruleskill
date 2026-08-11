@@ -52,7 +52,7 @@ When a rule pack sets `paths`, the Claude target also writes `.claude/rules/<rul
 
 Do not hand-edit generated output under `.agents/skills/`, `.claude/skills/`, or `.claude/rules/`. Edit `rules/` or `templates/`, then regenerate with the CLI. Installs overwrite existing destination files by default; `--force` is accepted for compatibility and currently does not change write behavior.
 
-Remove generated output with `ruleskill uninstall`, not by hand, so the Claude rule file next to the skill folder is not missed. Uninstall deletes the skill folder and the `.claude/rules/<rule-pack>-rules.md` pointer, then prunes `skills/` and `rules/` when they are empty. It keeps `.claude/` and `.agents/`. `--all` iterates the catalog rather than scanning for `*-rules` on disk, so it never removes skills from another source. This repo has its own generated output checked in, so never run uninstall in the repo root while testing.
+Remove generated output with `ruleskill uninstall` instead of deleting it by hand, so you do not leave the Claude rule file behind. Uninstall deletes the skill folder and the `.claude/rules/<rule-pack>-rules.md` pointer, then prunes `skills/` and `rules/` once they are empty. It keeps `.claude/` and `.agents/`, because removing them would break harness auto-detection and take other settings with them. `--all` walks the catalog instead of scanning for `*-rules` folders on disk, so it cannot delete a skill that came from somewhere else. This repo has its own generated output checked in, so never run uninstall in the repo root while testing.
 
 ## Rust Conventions
 

@@ -211,8 +211,8 @@ impl Skill {
         non_empty(self.manifest.name.as_deref())
     }
 
-    /// The kebab-case check keeps a manifest name from steering generated output paths outside
-    /// the harness folder.
+    /// The name becomes a path segment under the harness folder, so anything but kebab-case is
+    /// rejected here.
     pub(crate) fn output_name(&self) -> Result<String> {
         let Some(name) = self.name() else {
             bail!("{}: name is required", self.manifest_path);

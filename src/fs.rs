@@ -70,8 +70,8 @@ pub(crate) fn remove_generated(path: &Utf8Path, mode: WriteMode) -> Result<Optio
     }))
 }
 
-/// Entries listed in `ignoring` are treated as already gone, so a dry run reports the same
-/// prune that a real run performs.
+/// Treats entries in `ignoring` as already gone, so a dry run reports the same prune a real run
+/// performs.
 pub(crate) fn prune_empty_dir(
     path: &Utf8Path,
     ignoring: &[Utf8PathBuf],
