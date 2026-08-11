@@ -1,0 +1,13 @@
+---
+paths:
+{%- for path in paths %}
+  - {{ path }}
+{%- endfor %}
+---
+
+# {{ title }}
+
+{{ description }}
+
+Invoke the `{{ output_name }}` skill before writing or reviewing these files, then apply its reference rules.
+

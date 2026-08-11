@@ -1,7 +1,6 @@
 ---
 name: solidjs-rules
 description: "Use for SolidJS implementation, review, and architecture decisions: reactivity, components and props, component file conventions, control flow, stores and state, state architecture and business logic separation, ecosystem and library choices, data fetching, forms, i18n and locale handling, lifecycle and refs, testing, TypeScript, and React-to-Solid migration."
-paths: "**/*.tsx,**/*.jsx,**/*.ts,**/*.js"
 ---
 
 # SolidJS Rules
@@ -14,7 +13,7 @@ Use for SolidJS implementation, review, and architecture decisions: reactivity, 
 - [Components and props](references/solidjs-components-and-props.md): Read when writing or reviewing components, props handling, defaults, prop forwarding, or children.
 - [Component conventions](references/solidjs-component-conventions.md): Read when creating or organizing component files: exports per file, component declaration style, and props type naming.
 - [Control flow](references/solidjs-control-flow.md): Read when rendering conditionals or lists in JSX, or choosing between Show, For, Index, Switch, Dynamic, and Portal.
-- [Stores and state](references/solidjs-stores-and-state.md): Read when managing nested or shared state with createStore, produce, reconcile, context, or global state.
+- [Stores and state](references/solidjs-stores-and-state.md): Read when managing nested or shared state with createStore, produce, reconcile, context, or global state, or when store or query data crosses a boundary that needs raw objects (structuredClone, IPC, serialization) and must be unwrapped.
 - [State architecture](references/solidjs-state-architecture.md): Read when deciding where state and business logic live: state modules, actions and selectors, or component-local UI state.
 - [Ecosystem](references/solidjs-ecosystem.md): Read when choosing or adding libraries, targeting Solid versions, or setting up routing, SSR, headless UI, tables, virtualization, timing utilities, hotkeys, i18n, or devtools.
 - [Data fetching](references/solidjs-data-fetching.md): Read when fetching or mutating server state with TanStack Query, wiring Suspense and ErrorBoundary, integrating router loaders, or using createResource.

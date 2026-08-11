@@ -2,7 +2,7 @@
 
 `ruleskill` installs agent skills generated from Markdown rule packs.
 
-Use it to keep reusable engineering rules in one catalog, then render them into harness-specific skill folders for Codex or Claude Code. The source of truth for rules is in `rules/`; generated files are written under `.agents/skills/` or `.claude/skills/` in the directory that runs `ruleskill install <rule-pack>`.
+Use it to keep reusable engineering rules in one catalog, then render them into harness-specific skill folders for Codex or Claude Code. The source of truth for rules is in `rules/`; generated files are written under `.agents/skills/` or `.claude/skills/` in the directory that runs `ruleskill install <rule-pack>`. Rule packs that set `paths` also get a path-scoped `.claude/rules/` pointer for the Claude target.
 
 ## Usage
 
@@ -61,7 +61,9 @@ file = "rule-file.md"
 when = "Read when this rule applies."
 ```
 
-The optional `paths` field is a comma-separated list of glob patterns rendered into the generated skill frontmatter. Harnesses that support path-based activation (Claude Code) auto-load the skill when files matching the patterns are read or edited; other harnesses ignore the field.
+The optional `paths` field is a comma-separated list of glob patterns. For the Claude target it generates a path-scoped rule at `.claude/rules/<rule-pack>-rules.md` that points back at the skill, so Claude loads the pointer when it reads a matching file. Other harnesses ignore the field.
+
+`paths` is deliberately kept out of skill frontmatter. Claude Code accepts `paths` on a skill, but it then gates the whole skill: the skill is absent from the skill listing and `/<rule-pack>-rules` fails with `Unknown command` until a matching file is read in that session. Splitting the two artifacts keeps the skill invocable from the first turn and still auto-attaches when matching files are touched.
 
 Keep referenced files inside the skill folder. Avoid duplicate Markdown basenames within a single skill because generated references are flattened by filename.
 
