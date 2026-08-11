@@ -514,6 +514,201 @@ fn install_unknown_skill_without_close_match() {
         .stderr(predicate::str::contains("Did you mean").not());
 }
 
+#[test]
+fn uninstall_removes_claude_skill_and_rule_file() {
+    let repo = TempDir::new().unwrap();
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["install", "rust", "--target", "claude"])
+        .assert()
+        .success();
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["uninstall", "rust", "--target", "claude"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("removed"))
+        .stdout(predicate::str::contains("pruned"));
+
+    assert!(!repo.path().join(".claude/skills/rust-rules").exists());
+    assert!(!repo.path().join(".claude/rules/rust-rules.md").exists());
+    assert!(!repo.path().join(".claude/skills").exists());
+    assert!(!repo.path().join(".claude/rules").exists());
+    assert!(repo.path().join(".claude").is_dir());
+}
+
+#[test]
+fn uninstall_removes_codex_skill_directory() {
+    let repo = TempDir::new().unwrap();
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["install", "rust", "--target", "codex"])
+        .assert()
+        .success();
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["uninstall", "rust", "--target", "codex"])
+        .assert()
+        .success();
+
+    assert!(!repo.path().join(".agents/skills").exists());
+    assert!(repo.path().join(".agents").is_dir());
+}
+
+#[test]
+fn uninstall_leaves_other_packs_installed() {
+    let repo = TempDir::new().unwrap();
+
+    for pack in ["rust", "github-actions"] {
+        cmd()
+            .current_dir(repo.path())
+            .args(["install", pack, "--target", "codex"])
+            .assert()
+            .success();
+    }
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["uninstall", "rust", "--target", "codex"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("pruned").not());
+
+    assert!(!repo.path().join(".agents/skills/rust-rules").exists());
+    assert!(repo
+        .path()
+        .join(".agents/skills/github-actions-rules/SKILL.md")
+        .is_file());
+}
+
+#[test]
+fn uninstall_all_removes_every_catalog_pack() {
+    let repo = TempDir::new().unwrap();
+
+    for pack in ["rust", "github-actions"] {
+        cmd()
+            .current_dir(repo.path())
+            .args(["install", pack, "--target", "claude"])
+            .assert()
+            .success();
+    }
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["uninstall", "--all", "--target", "claude"])
+        .assert()
+        .success();
+
+    assert!(!repo.path().join(".claude/skills").exists());
+    assert!(!repo.path().join(".claude/rules").exists());
+}
+
+#[test]
+fn uninstall_dry_run_reports_paths_without_removing() {
+    let repo = TempDir::new().unwrap();
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["install", "rust", "--target", "codex"])
+        .assert()
+        .success();
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["uninstall", "rust", "--target", "codex", "--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("would remove"))
+        .stdout(predicate::str::contains("would prune"));
+
+    assert!(repo
+        .path()
+        .join(".agents/skills/rust-rules/SKILL.md")
+        .is_file());
+}
+
+#[test]
+fn uninstall_is_idempotent_when_nothing_is_installed() {
+    let repo = TempDir::new().unwrap();
+    fs::create_dir_all(repo.path().join(".claude")).unwrap();
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["uninstall", "rust"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("nothing to remove for claude"));
+}
+
+#[test]
+fn uninstall_succeeds_after_the_catalog_rule_file_is_deleted() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "stale");
+    let rule_file = catalog.path().join("rules/stale/example.md");
+    write(&rule_file, "# Ex\n");
+
+    let repo = TempDir::new().unwrap();
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(["install", "stale", "--target", "claude"])
+        .assert()
+        .success();
+    fs::remove_file(&rule_file).unwrap();
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(["uninstall", "stale", "--target", "claude"])
+        .assert()
+        .success();
+
+    assert!(!repo.path().join(".claude/skills").exists());
+}
+
+#[test]
+fn uninstall_without_pack_lists_available_packs() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "rust");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .arg("uninstall")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("no skill provided"))
+        .stderr(predicate::str::contains("rust"))
+        .stderr(predicate::str::contains("--all"));
+}
+
+#[test]
+fn uninstall_unknown_pack_suggests_closest() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "github-actions");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .args(["uninstall", "github-action"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "unknown skill 'github-action'. Did you mean 'github-actions'?",
+        ));
+}
+
+#[test]
+fn uninstall_rejects_a_pack_together_with_all() {
+    cmd()
+        .args(["uninstall", "rust", "--all"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("cannot be used with"));
+}
+
 fn cmd() -> Command {
     Command::cargo_bin("ruleskill").unwrap()
 }

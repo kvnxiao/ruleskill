@@ -166,12 +166,15 @@ impl Catalog {
         finish_validation(&errors)
     }
 
-    pub(crate) fn find_validated_skill(&self, name: &str) -> Result<&Skill> {
-        let skill = self
-            .skills
+    pub(crate) fn find_skill(&self, name: &str) -> Result<&Skill> {
+        self.skills
             .iter()
             .find(|skill| skill.name() == Some(name))
-            .ok_or_else(|| self.unknown_skill_error(name))?;
+            .ok_or_else(|| self.unknown_skill_error(name))
+    }
+
+    pub(crate) fn find_validated_skill(&self, name: &str) -> Result<&Skill> {
+        let skill = self.find_skill(name)?;
 
         let mut errors = Vec::new();
         skill.validate(&self.template, &self.rule_template, &mut errors);
@@ -206,6 +209,18 @@ impl Skill {
 
     pub(crate) fn name(&self) -> Option<&str> {
         non_empty(self.manifest.name.as_deref())
+    }
+
+    /// The name becomes a path segment under the harness folder, so anything but kebab-case is
+    /// rejected here.
+    pub(crate) fn output_name(&self) -> Result<String> {
+        let Some(name) = self.name() else {
+            bail!("{}: name is required", self.manifest_path);
+        };
+        if !is_kebab_case(name) {
+            bail!("{}: name '{name}' must be kebab-case", self.manifest_path);
+        }
+        Ok(output_skill_name(name))
     }
 
     pub(crate) fn resolve(&self) -> Result<ResolvedSkill> {
