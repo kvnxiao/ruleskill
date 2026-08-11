@@ -30,6 +30,16 @@ ruleskill install rust --target all # install for all supported harness targets
 
 Use `--dry-run` to preview writes. `--force` is accepted for compatibility and currently does not change overwrite behavior.
 
+Uninstall a skill (removes the generated skill folder and, for the Claude target, the `.claude/rules/` pointer):
+
+```sh
+ruleskill uninstall rust # auto-detect harness target
+ruleskill uninstall rust --target claude --dry-run # preview the removals
+ruleskill uninstall --all # remove every rule pack in the catalog
+```
+
+`--all` covers the packs in the catalog, so it never deletes skills that `ruleskill` did not install. Output installed from a pack that has since left the catalog has to be deleted by hand. Empty `skills/` and `rules/` folders are pruned; `.claude/` and `.agents/` are kept so harness auto-detection and other settings survive.
+
 ## Development
 
 Useful checks:

@@ -15,6 +15,7 @@ Install the CLI locally with `cargo install --path .`. The installed CLI command
 - `ruleskill list`
 - `ruleskill validate`
 - `ruleskill install <rule-pack> [--target codex|claude|all|auto] [--dry-run] [--force]`
+- `ruleskill uninstall <rule-pack>|--all [--target codex|claude|all|auto] [--dry-run]`
 
 During development, the same commands can be run with `cargo run -- <command>`.
 
@@ -50,6 +51,8 @@ Generated `SKILL.md` files are rendered from `templates/skill.md.j2` and start w
 When a rule pack sets `paths`, the Claude target also writes `.claude/rules/<rule-pack>-rules.md` from `templates/rule.md.j2`: a short pointer whose own `paths` frontmatter makes Claude load it on reading a matching file, telling it to invoke the skill. Never put `paths` in skill frontmatter — Claude Code accepts the field but then hides the skill from the skill listing and rejects `/<rule-pack>-rules` with `Unknown command` until a matching file is read in that session. The Codex target has no rule-file equivalent and gets skills only.
 
 Do not hand-edit generated output under `.agents/skills/`, `.claude/skills/`, or `.claude/rules/`. Edit `rules/` or `templates/`, then regenerate with the CLI. Installs overwrite existing destination files by default; `--force` is accepted for compatibility and currently does not change write behavior.
+
+Remove generated output with `ruleskill uninstall`, not by hand, so the Claude rule file next to the skill folder is not missed. Uninstall deletes the skill folder and the `.claude/rules/<rule-pack>-rules.md` pointer, then prunes `skills/` and `rules/` when they are empty. It keeps `.claude/` and `.agents/`. `--all` iterates the catalog rather than scanning for `*-rules` on disk, so it never removes skills from another source. This repo has its own generated output checked in, so never run uninstall in the repo root while testing.
 
 ## Rust Conventions
 
