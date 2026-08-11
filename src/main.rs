@@ -12,10 +12,10 @@ use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
 
-use crate::catalog::Catalog;
+use crate::catalog::{Catalog, RULE_TEMPLATE, SKILL_TEMPLATE};
 use crate::detect::{resolve_target, Target};
 use crate::fs::{write_generated, WriteMode};
-use crate::render::{generated_reference, render_skill};
+use crate::render::{generated_reference, render_template};
 
 #[derive(Debug, Parser)]
 #[command(name = "ruleskill")]
@@ -102,7 +102,12 @@ fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool)
     };
     let skill = catalog.find_validated_skill(skill_name)?;
     let resolved = skill.resolve()?;
-    let skill_md = render_skill(catalog.template(), &resolved.render)?;
+    let skill_md = render_template(SKILL_TEMPLATE, catalog.template(), &resolved.render)?;
+    let rule_md = resolved
+        .rule_file
+        .as_ref()
+        .map(|rule_file| render_template(RULE_TEMPLATE, catalog.rule_template(), rule_file))
+        .transpose()?;
     let repo_root = current_dir_utf8()?;
     let harnesses = resolve_target(target, &repo_root)?;
     let mode = if dry_run {
@@ -139,6 +144,14 @@ fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool)
                 mode,
                 force,
             )?;
+            print_report(&report, &mut stdout)?;
+        }
+
+        if let (Some(content), Some(path)) = (
+            rule_md.as_deref(),
+            harness.rule_file(&repo_root, &resolved.render.output_name),
+        ) {
+            let report = write_generated(&path, content, mode, force)?;
             print_report(&report, &mut stdout)?;
         }
     }

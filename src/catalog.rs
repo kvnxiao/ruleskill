@@ -12,10 +12,14 @@ use crate::render;
 
 const CATALOG_DIR_ENV: &str = "RULESKILL_CATALOG_DIR";
 
+pub(crate) const SKILL_TEMPLATE: &str = "skill.md.j2";
+pub(crate) const RULE_TEMPLATE: &str = "rule.md.j2";
+
 #[derive(Debug)]
 pub(crate) struct Catalog {
     root: Utf8PathBuf,
     template: String,
+    rule_template: String,
     skills: Vec<Skill>,
 }
 
@@ -47,6 +51,7 @@ struct RuleManifest {
 #[derive(Debug, Clone)]
 pub(crate) struct ResolvedSkill {
     pub(crate) render: RenderSkill,
+    pub(crate) rule_file: Option<RenderRuleFile>,
     pub(crate) references: Vec<ResolvedReference>,
 }
 
@@ -57,8 +62,15 @@ pub(crate) struct RenderSkill {
     title: String,
     description: String,
     description_yaml: String,
-    paths_yaml: Option<String>,
     rules: Vec<RenderRule>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct RenderRuleFile {
+    output_name: String,
+    title: String,
+    description: String,
+    paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -81,9 +93,8 @@ impl Catalog {
     }
 
     pub(crate) fn load(root: Utf8PathBuf) -> Result<Self> {
-        let template_path = root.join("templates").join("skill.md.j2");
-        let template = fs::read_to_string(&template_path)
-            .with_context(|| format!("failed to read template at {template_path}"))?;
+        let template = read_template(&root, SKILL_TEMPLATE)?;
+        let rule_template = read_template(&root, RULE_TEMPLATE)?;
 
         let rules_dir = root.join("rules");
         if !rules_dir.is_dir() {
@@ -126,6 +137,7 @@ impl Catalog {
         Ok(Self {
             root,
             template,
+            rule_template,
             skills,
         })
     }
@@ -138,6 +150,10 @@ impl Catalog {
         &self.template
     }
 
+    pub(crate) fn rule_template(&self) -> &str {
+        &self.rule_template
+    }
+
     pub(crate) fn skills(&self) -> &[Skill] {
         &self.skills
     }
@@ -145,7 +161,7 @@ impl Catalog {
     pub(crate) fn validate(&self) -> Result<()> {
         let mut errors = Vec::new();
         for skill in &self.skills {
-            skill.validate(&self.template, &mut errors);
+            skill.validate(&self.template, &self.rule_template, &mut errors);
         }
         finish_validation(&errors)
     }
@@ -158,7 +174,7 @@ impl Catalog {
             .ok_or_else(|| self.unknown_skill_error(name))?;
 
         let mut errors = Vec::new();
-        skill.validate(&self.template, &mut errors);
+        skill.validate(&self.template, &self.rule_template, &mut errors);
         finish_validation(&errors)?;
         Ok(skill)
     }
@@ -215,22 +231,34 @@ impl Skill {
 
         let name = required(self.manifest.name.as_deref(), "skill name")?;
         let description = required(self.manifest.description.as_deref(), "skill description")?;
+        let title = required(self.manifest.title.as_deref(), "skill title")?;
+        let output_name = output_skill_name(name);
+
+        let rule_file = non_empty(self.manifest.paths.as_deref()).map(|paths| RenderRuleFile {
+            output_name: output_name.clone(),
+            title: title.to_owned(),
+            description: description.to_owned(),
+            paths: split_paths(paths)
+                .into_iter()
+                .map(yaml_double_quoted)
+                .collect(),
+        });
 
         Ok(ResolvedSkill {
             render: RenderSkill {
                 name: name.to_owned(),
-                output_name: output_skill_name(name),
-                title: required(self.manifest.title.as_deref(), "skill title")?.to_owned(),
+                output_name,
+                title: title.to_owned(),
                 description: description.to_owned(),
                 description_yaml: yaml_double_quoted(description),
-                paths_yaml: non_empty(self.manifest.paths.as_deref()).map(yaml_double_quoted),
                 rules,
             },
+            rule_file,
             references,
         })
     }
 
-    fn validate(&self, template: &str, errors: &mut Vec<String>) {
+    fn validate(&self, template: &str, rule_template: &str, errors: &mut Vec<String>) {
         let mut local_errors = Vec::new();
         let subject = format!("{}:", self.manifest_path);
 
@@ -259,7 +287,7 @@ impl Skill {
             .manifest
             .paths
             .as_deref()
-            .is_some_and(|paths| paths.trim().is_empty())
+            .is_some_and(|paths| split_paths(paths).is_empty())
         {
             local_errors.push(format!("{subject} paths must be non-empty when set"));
         }
@@ -318,11 +346,14 @@ impl Skill {
         }
 
         if local_errors.is_empty() {
-            match self
-                .resolve()
-                .and_then(|resolved| render::render_skill(template, &resolved.render))
-            {
-                Ok(_) => {}
+            match self.resolve().and_then(|resolved| {
+                render::render_template(SKILL_TEMPLATE, template, &resolved.render)?;
+                if let Some(rule_file) = &resolved.rule_file {
+                    render::render_template(RULE_TEMPLATE, rule_template, rule_file)?;
+                }
+                Ok(())
+            }) {
+                Ok(()) => {}
                 Err(err) => {
                     local_errors.push(format!("{subject} template rendering failed: {err:#}"));
                 }
@@ -340,6 +371,19 @@ fn default_catalog_root() -> Result<Utf8PathBuf> {
     }
 
     Ok(Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")))
+}
+
+fn read_template(root: &Utf8Path, name: &str) -> Result<String> {
+    let path = root.join("templates").join(name);
+    fs::read_to_string(&path).with_context(|| format!("failed to read template at {path}"))
+}
+
+fn split_paths(paths: &str) -> Vec<&str> {
+    paths
+        .split(',')
+        .map(str::trim)
+        .filter(|path| !path.is_empty())
+        .collect()
 }
 
 fn finish_validation(errors: &[String]) -> Result<()> {

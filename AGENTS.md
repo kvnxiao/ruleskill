@@ -8,7 +8,7 @@ This repo installs its own rule packs as `*-rules` skills (e.g. `rust-rules`, `g
 
 ## Project Shape
 
-`ruleskill` is a Rust CLI that installs agent skills generated from Markdown rule packs. The catalog lives in `rules/`, the MiniJinja template lives in `templates/skill.md.j2`, CLI/source code lives in `src/`, and integration tests live in `tests/cli.rs`.
+`ruleskill` is a Rust CLI that installs agent skills generated from Markdown rule packs. The catalog lives in `rules/`, the MiniJinja templates live in `templates/skill.md.j2` and `templates/rule.md.j2`, CLI/source code lives in `src/`, and integration tests live in `tests/cli.rs`.
 
 Install the CLI locally with `cargo install --path .`. The installed CLI commands are:
 
@@ -39,15 +39,17 @@ Use `cargo fmt` to fix formatting before re-running `cargo fmt --check`.
 
 Each rule pack lives under `rules/<rule-pack>/skill.toml`; the catalog loader scans `rules/*/skill.toml`. The folder name and manifest `name` must match and must be kebab-case.
 
-Every `skill.toml` needs `name`, `title`, `description`, and at least one `[[rules]]` entry. Each rule needs `title`, `file`, and `when`. An optional top-level `paths` field (comma-separated globs) is rendered into the generated skill frontmatter so harnesses with path-based activation (Claude Code) auto-load the skill when matching files are touched; it must be non-empty when set.
+Every `skill.toml` needs `name`, `title`, `description`, and at least one `[[rules]]` entry. Each rule needs `title`, `file`, and `when`. An optional top-level `paths` field (comma-separated globs) generates a path-scoped Claude rule file instead of skill frontmatter; it must hold at least one non-empty pattern when set.
 
 Rule file paths must be relative paths that stay inside their rule pack folder. Duplicate rule file paths are invalid. Generated reference files flatten to the source filename, so two rule files with the same basename in one rule pack will collide even if they are in different subdirectories.
 
 ## Generated Output
 
-Generated `SKILL.md` files are rendered from `templates/skill.md.j2` and start with YAML frontmatter. Generated reference files preserve the source Markdown rule files verbatim.
+Generated `SKILL.md` files are rendered from `templates/skill.md.j2` and start with YAML frontmatter carrying only `name` and `description`. Generated reference files preserve the source Markdown rule files verbatim.
 
-Do not hand-edit generated skill output under `.agents/skills/` or `.claude/skills/`. Edit `rules/` or `templates/`, then regenerate with the CLI. Installs overwrite existing destination files by default; `--force` is accepted for compatibility and currently does not change write behavior.
+When a rule pack sets `paths`, the Claude target also writes `.claude/rules/<rule-pack>-rules.md` from `templates/rule.md.j2`: a short pointer whose own `paths` frontmatter makes Claude load it on reading a matching file, telling it to invoke the skill. Never put `paths` in skill frontmatter — Claude Code accepts the field but then hides the skill from the skill listing and rejects `/<rule-pack>-rules` with `Unknown command` until a matching file is read in that session. The Codex target has no rule-file equivalent and gets skills only.
+
+Do not hand-edit generated output under `.agents/skills/`, `.claude/skills/`, or `.claude/rules/`. Edit `rules/` or `templates/`, then regenerate with the CLI. Installs overwrite existing destination files by default; `--force` is accepted for compatibility and currently does not change write behavior.
 
 ## Rust Conventions
 

@@ -1,17 +1,20 @@
 use anyhow::{Context, Result};
 use minijinja::Environment;
+use serde::Serialize;
 
-use crate::catalog::RenderSkill;
-
-pub(crate) fn render_skill(template: &str, skill: &RenderSkill) -> Result<String> {
+pub(crate) fn render_template(
+    name: &str,
+    template: &str,
+    context: &impl Serialize,
+) -> Result<String> {
     let mut env = Environment::new();
-    env.add_template("skill.md.j2", template)
-        .context("failed to load skill template")?;
+    env.add_template(name, template)
+        .with_context(|| format!("failed to load template {name}"))?;
     let rendered = env
-        .get_template("skill.md.j2")
-        .context("failed to resolve skill template")?
-        .render(skill)
-        .context("failed to render skill template")?;
+        .get_template(name)
+        .with_context(|| format!("failed to resolve template {name}"))?
+        .render(context)
+        .with_context(|| format!("failed to render template {name}"))?;
 
     Ok(rendered)
 }

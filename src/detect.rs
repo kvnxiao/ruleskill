@@ -30,6 +30,18 @@ impl Harness {
             Self::Claude => repo_root.join(".claude").join("skills").join(skill_name),
         }
     }
+
+    pub(crate) fn rule_file(self, repo_root: &Utf8Path, skill_name: &str) -> Option<Utf8PathBuf> {
+        match self {
+            Self::Codex => None,
+            Self::Claude => Some(
+                repo_root
+                    .join(".claude")
+                    .join("rules")
+                    .join(format!("{skill_name}.md")),
+            ),
+        }
+    }
 }
 
 pub(crate) fn resolve_target(target: Target, repo_root: &Utf8Path) -> Result<Vec<Harness>> {
