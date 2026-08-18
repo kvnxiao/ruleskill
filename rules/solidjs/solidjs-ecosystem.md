@@ -34,7 +34,7 @@ For every concern below, use the TanStack Solid adapter before any alternative, 
 Application UI components come from solid-ui's copy-paste registry, vendored into the repo (conventionally `src/components/ui`) and styled with Tailwind CSS. `@kobalte/core` provides the behavior and accessibility layer, with scoped `@corvu/*` packages providing drawer, resizable, OTP field, and calendar components. Kobalte and corvu remain upstream npm dependencies; the vendored styling and composition layer is project code, so maintain it like any other code because upstream fixes do not arrive automatically.
 
 - Vendored UI components are views. Keep them dumb per the state architecture rules; no business logic under `components/ui`.
-- Build new interactive components on Kobalte primitives rather than hand-rolling ARIA behavior; purely presentational pieces need no foundation.
+- Build new interactive components on Kobalte primitives rather than hand-rolling ARIA behavior; purely presentational pieces do not need a foundation.
 - Do not copy solid-ui's date picker — it is the registry's one Ark UI component and upstream is replacing it. Compose a picker from `@corvu/calendar` and a Kobalte popover instead.
 - `@ark-ui/solid` (Zag.js) is an acceptable alternative headless base when its wider widget catalog is decisive; use one foundation per app.
 - Icons: `lucide-solid`.

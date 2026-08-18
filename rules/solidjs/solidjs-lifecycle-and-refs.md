@@ -67,4 +67,4 @@ createEffect(() => {
 
 ## Plain `let` Replaces `useRef` Boxes
 
-Any `let` in the component body is a stable instance variable because the function runs once. Non-reactive instance state needs no mutable-box wrapper.
+Any `let` in the component body is a stable instance variable because the function runs once. Non-reactive instance state does not need a mutable-box wrapper.
