@@ -11,7 +11,7 @@ For both libraries and applications, declare dependencies with caret/semver rang
 
 ```toml
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }   # ≡ ^1.0, allows 1.x updates
+serde = { version = "1.0", features = ["derive"] }   # Equivalent to ^1.0; permits 1.x updates.
 tokio = { version = "1.35", features = ["rt-multi-thread", "net", "macros"] }
 ```
 
@@ -19,7 +19,7 @@ Commit `Cargo.lock` for binaries (always) and for libraries when reproducibility
 
 ## Preferred Crates
 
-When a task has a clear best-in-class crate in the Rust ecosystem, default to it. Documented here so dependency choices don't get re-litigated in every PR.
+When a task has a clear crate choice in the Rust ecosystem, default to it. Document the preferred crates here so dependency choices follow one rule across PRs.
 
 | Domain | Use | Avoid |
 |---|---|---|
@@ -45,7 +45,7 @@ Exact pins (`"=1.2.3"`) restrict Cargo's resolver, prevent normal updates, and c
 # Re-evaluate after 1.0.198 ships. https://github.com/serde-rs/serde/issues/XXXX
 serde = "=1.0.195"
 
-# Facade/impl pair (you own both): ship in lockstep, rely on private APIs.
+# Facade/impl pair: own both crates, ship them in lockstep, and rely on private APIs.
 thiserror-impl = { version = "=2.0.18", path = "impl" }
 ```
 
@@ -57,7 +57,7 @@ If none of the above apply, use a caret range. **Do not pin pre-emptively for "s
 [dependencies]
 tokio = { version = "1.35", features = ["rt-multi-thread", "net", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
-# Not: features = ["full"]
+# Do not enable the full feature set.
 ```
 
 ## Review Dependencies Regularly

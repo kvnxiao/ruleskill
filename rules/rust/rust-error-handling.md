@@ -21,19 +21,19 @@ A public `enum` freezes every variant into your semver surface. Wrap a **private
 ```rust
 use thiserror::Error;
 
-// Public, opaque, easy to keep compatible.
+// Keep the public type opaque so its representation can evolve.
 #[derive(Debug, Error)]
 #[error(transparent)]
 pub struct ParseError(#[from] ErrorRepr);
 
 impl ParseError {
-    // Expose only the classification callers actually need.
+    // Expose only the classifications callers need.
     pub fn is_eof(&self) -> bool {
         matches!(self.0, ErrorRepr::UnexpectedEof)
     }
 }
 
-// Private: evolve variants without a breaking change.
+// Keep variants private so they can evolve without a breaking change.
 #[derive(Debug, Error)]
 enum ErrorRepr {
     #[error("unexpected end of input")]
@@ -48,11 +48,11 @@ enum ErrorRepr {
 ```rust
 #[derive(Debug, Error)]
 pub enum Error {
-    // `#[from]` generates the `From` impl AND implies `#[source]`.
+    // `#[from]` generates the `From` impl and implies `#[source]`.
     #[error("i/o failed")]
     Io(#[from] std::io::Error),
 
-    // A field literally named `source` is detected as the source automatically.
+    // A field named `source` is detected automatically as the source.
     #[error("parse failed at byte {offset}")]
     Parse { source: ParseError, offset: usize },
 }
@@ -60,17 +60,17 @@ pub enum Error {
 
 A source must be `'static` — `std::error::Error::source` returns `&(dyn Error + 'static)`, so a source field carrying a borrowed lifetime will not compile.
 
-## One error type per crate (the "God error")
+## One error type per crate
 
-An alternative to a public enum: a single crate-wide `Error` whose variants stay private. Callers classify through non-exhaustive `is_*` predicates. Keep it one word wide and cheap to clone by boxing the payload behind `Arc`.
+An alternative to a public enum is a single crate-wide `Error` whose variants stay private. Callers classify through non-exhaustive `is_*` predicates. Keep the public type to one pointer and make it cheap to clone by boxing the payload behind `Arc`.
 
 ```rust
 use std::sync::Arc;
 
-/// The one error type every fallible API in this crate returns.
+/// Return one error type from every fallible API in this crate.
 #[derive(Clone)]
 pub struct Error {
-    // One pointer. Cheap to clone even when it wraps an io::Error.
+    // One pointer; cloning copies the pointer even when it wraps an io::Error.
     inner: Option<Arc<ErrorInner>>,
 }
 
@@ -79,11 +79,11 @@ struct ErrorInner {
     // ... source chain, context messages ...
 }
 
-// Variants are private; callers branch through predicates, never `match`.
+// Keep variants private; callers use predicates instead of matching on them.
 enum ErrorKind { /* ... */ }
 
 impl Error {
-    /// Predicates are deliberately NOT exhaustive, so new ones are additive.
+    /// Predicates are not exhaustive, so new ones are additive.
     pub fn is_not_found(&self) -> bool {
         matches!(self.inner.as_deref().map(|i| &i.kind), Some(ErrorKind::NotFound))
     }
@@ -95,7 +95,7 @@ Use this when you want a stable, tiny error surface across a large API and are w
 ## `Result` alias with a defaulted error param
 
 ```rust
-// Crate-wide alias. The default lets callers still override E when needed.
+// The default error type lets callers override E when needed.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 ```
 
@@ -107,18 +107,18 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 use anyhow::{Context, Result};
 
 fn load(path: &Utf8Path) -> Result<Config> {
-    // Bad: this `format!` allocates on every successful read, too.
+    // Bad: `format!` allocates on successful reads.
     let text = fs_err::read_to_string(path).context(format!("reading {path}"))?;
 
-    // Good: the closure runs only on failure.
+    // Lazy context: the closure runs only on failure.
     let text = fs_err::read_to_string(path).with_context(|| format!("reading {path}"))?;
 
-    // A bare string literal is free to build — eager is fine.
+    // Eager context is fine for a bare string literal.
     toml::from_str(&text).context("parsing config")
 }
 ```
 
-A typed "God error" can offer the same `.context()` chaining on its own type; a `thiserror` enum instead carries context through `#[source]` fields.
+A crate-wide error type can offer the same `.context()` chaining on its own type; a `thiserror` enum instead carries context through `#[source]` fields.
 
 ## Inspect an error: walk the chain, downcast
 

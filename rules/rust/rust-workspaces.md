@@ -51,11 +51,11 @@ unsafe_code = "forbid"
 missing_docs = "warn"
 missing_debug_implementations = "warn"
 
-# Clippy lints: configure the project's strict set under
-# `[workspace.lints.clippy]` (not `[lints.clippy]`) at the workspace root,
-# alongside a `clippy.toml` that sets `allow-expect-in-tests = true`.
+# Configure the project's Clippy lints under `[workspace.lints.clippy]`, not
+# `[lints.clippy]`, at the workspace root. Keep `allow-expect-in-tests = true`
+# in the accompanying `clippy.toml`.
 [workspace.lints.clippy]
-# … project-specific strict lints …
+# Add project-specific strict lints here.
 
 [workspace.package]
 edition = "2024"
@@ -80,7 +80,7 @@ tokio.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 
-# Crate-specific dependencies
+# Add crate-specific dependencies here.
 uuid = { version = "1.6", features = ["v4"] }
 
 [lints]
@@ -99,7 +99,7 @@ Use workspace dependencies for shared crates:
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.35", default-features = false }
 
-# Member crates can enable additional features
+# Member crates can enable additional features.
 # my-server/Cargo.toml
 [dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "net"] }
@@ -117,14 +117,14 @@ my-core = { path = "../my-core", version = "0.2.0" }
 ### 3. Avoid Circular Dependencies
 
 ```toml
-# BAD: Circular dependency
-# my-core depends on my-utils
-# my-utils depends on my-core
+# Bad: these crates depend on each other.
+# my-core depends on my-utils.
+# my-utils depends on my-core.
 
-# GOOD: Create third crate for shared types
-# my-types (no dependencies on other workspace crates)
-# my-core depends on my-types
-# my-utils depends on my-types
+# Good: move shared types to a third crate.
+# my-types has no dependencies on other workspace crates.
+# my-core depends on my-types.
+# my-utils depends on my-types.
 ```
 
 ## Workspace Commands

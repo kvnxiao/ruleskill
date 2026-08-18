@@ -88,14 +88,14 @@ impl UserId {
     pub fn as_u64(self) -> u64 { self.0 }
 }
 
-// The compiler rejects a ProductId where a UserId is expected.
+// A ProductId argument does not satisfy the UserId parameter.
 fn get_user(id: UserId) -> Result<User> { /* ... */ }
 ```
 
 ## Safe Arithmetic
 
 ```rust
-// Bad: overflow panics in debug, wraps in release.
+// Bad: overflow panics in debug builds and wraps in release builds.
 let result = a + b;
 
 // Good: handle overflow explicitly.
@@ -104,7 +104,7 @@ let result = a.checked_add(b).ok_or(MyLibraryError::ValidationError {
     constraint: "result would overflow".to_string(),
 })?;
 
-// Or choose an explicit policy:
+// Choose an explicit policy:
 let result = a.saturating_add(b); // cap at the bound
 let result = a.wrapping_add(b);   // wrap on overflow
 ```

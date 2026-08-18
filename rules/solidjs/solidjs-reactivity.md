@@ -7,25 +7,25 @@ description: "Core SolidJS reactivity rules; tracking scopes, derived functions 
 
 ## Read Signals Inside Tracking Scopes
 
-Dependency tracking happens only when a signal getter is called inside a tracking scope: JSX expressions, `createEffect`, `createMemo`, `createRenderEffect`, or control-flow component props. A read outside those scopes evaluates once and never updates. This is the most common Solid bug; the symptom is "renders once, then never changes".
+Dependency tracking happens only when a signal getter is called inside a tracking scope: JSX expressions, `createEffect`, `createMemo`, `createRenderEffect`, or control-flow component props. A read outside those scopes evaluates once and never updates. A common symptom is "renders once, then never changes".
 
 ```tsx
-// Bad: computed once at setup, frozen forever
+// Bad: the value is computed once during setup.
 const doubled = count() * 2;
 
-// Good: a derived function re-evaluates wherever it is read in a tracking scope
+// Good: the derived function re-evaluates when read in a tracking scope.
 const doubled = () => count() * 2;
 ```
 
 ## Derived Functions First, `createMemo` When Shared or Expensive
 
-A plain derived function is the default idiom. Reach for `createMemo` when the computation is expensive, when the value is read from multiple reactive contexts (each read of a plain function recomputes), or when you want its equality check to stop downstream updates for unchanged results.
+A plain derived function is the default idiom. Use `createMemo` when the computation is expensive, when the value is read from multiple reactive contexts (each read of a plain function recomputes), or when you want its equality check to stop downstream updates for unchanged results.
 
 ```tsx
-// Default: cheap derivation, read in one place
+// Use a derived function for a cheap value read in one place.
 const fullName = () => `${firstName()} ${lastName()}`;
 
-// Memo: expensive or read in several tracking scopes
+// Use a memo for an expensive value or one read in several tracking scopes.
 const sorted = createMemo(() => [...items()].sort(byRank));
 ```
 
@@ -36,10 +36,10 @@ Do not wrap a simple passthrough in a memo; `createMemo(() => props.id)` adds a 
 `createEffect` is for DOM measurement, subscriptions, logging, and third-party libraries. Never use it to derive state from other state; derive instead.
 
 ```tsx
-// Bad: state synced through an effect
+// Bad: derives state through an effect.
 createEffect(() => setFullName(`${firstName()} ${lastName()}`));
 
-// Good
+// Good: derive the value directly.
 const fullName = () => `${firstName()} ${lastName()}`;
 ```
 
@@ -48,10 +48,10 @@ const fullName = () => `${firstName()} ${lastName()}`;
 Effects and memos track automatically; there is nothing to declare. For explicit dependencies or to skip the first run, use `on`.
 
 ```tsx
-// Bad: React habit; the second argument is not a dependency array
+// Bad: the second argument is not a dependency array.
 createEffect(() => console.log(a()), [a]);
 
-// Good: track only `a`; `b()` is read untracked; skip the initial run
+// Good: track only `a`, read `b()` untracked, and skip the initial run.
 createEffect(on(a, (v) => console.log(v, b()), { defer: true }));
 ```
 
@@ -60,7 +60,7 @@ createEffect(on(a, (v) => console.log(v, b()), { defer: true }));
 Only signal reads before the first `await` are tracked; reads after it are silently untracked, so the effect stops re-running. Never fetch data in an async effect; use TanStack Query or `createResource` (see the data fetching rules).
 
 ```tsx
-// Bad: `filter()` is read after await and is not tracked
+// Bad: `filter()` is read after `await`, so it is not tracked.
 createEffect(async () => {
   const res = await fetch(url());
   applyFilter(await res.json(), filter());
@@ -80,4 +80,4 @@ batch(() => {
 
 ## Own Every Computation
 
-Computations created outside any root leak and warn. Components provide owners automatically; for reactive graphs outside the component tree (module-level stores, imperative widgets), wrap creation in `createRoot` and keep the `dispose` handle. In async continuations (`setTimeout`, promise callbacks) the owner is lost; capture it with `getOwner()` and restore with `runWithOwner` when creating computations there.
+Computations created outside any root leak and emit warnings. Components provide owners automatically; for reactive graphs outside the component tree (module-level stores, imperative widgets), wrap creation in `createRoot` and keep the `dispose` handle. In async continuations (`setTimeout`, promise callbacks) the owner is lost; capture it with `getOwner()` and restore it with `runWithOwner` when creating computations in the continuation.

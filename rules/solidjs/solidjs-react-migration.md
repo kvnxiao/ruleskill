@@ -5,7 +5,7 @@ description: "React-to-Solid migration corrections; the React habits that silent
 
 # React to Solid Migration
 
-Solid's JSX looks like React, but the model is inverted: components run once and updates flow through fine-grained signals, not re-renders. These are the React habits that silently break, with the Solid correction. Most are covered in depth by the other rules in this pack.
+Solid's JSX looks like React, but its execution model differs: components run once and updates flow through fine-grained signals, not re-renders. The table maps React habits that break Solid reactivity to Solid patterns. The other rules in this pack cover the patterns in depth.
 
 ## Rendering Model
 

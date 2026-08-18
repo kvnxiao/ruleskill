@@ -5,7 +5,7 @@ description: "SolidJS lifecycle and ref rules; onMount/onCleanup pairing, no cle
 
 # Lifecycle and Refs
 
-Lifecycle is minimal because components never re-run: `onMount` runs once after the component's elements are in the DOM, and `onCleanup` runs when the owning scope disposes — on unmount, or before each re-run when registered inside an effect or memo. There is no `componentDidUpdate` equivalent; updates are the reactive graph's job.
+Components run once, so lifecycle hooks cover mount and disposal: `onMount` runs once after the component's elements are in the DOM, and `onCleanup` runs when the owning scope disposes — on unmount, or before each re-run when registered inside an effect or memo. There is no `componentDidUpdate` equivalent; reactive computations handle updates.
 
 ## Pair Every Imperative Resource With `onCleanup`
 
@@ -23,13 +23,13 @@ onMount(() => {
 Returning a function from `createEffect` does nothing. Register `onCleanup` inside the effect instead; it runs before each re-run and on disposal.
 
 ```tsx
-// Bad: React habit, silently ignored
+// Bad: Solid ignores the returned cleanup function.
 createEffect(() => {
   const id = setInterval(tick, delay());
   return () => clearInterval(id);
 });
 
-// Good
+// Good: register cleanup with onCleanup.
 createEffect(() => {
   const id = setInterval(tick, delay());
   onCleanup(() => clearInterval(id));
@@ -38,7 +38,7 @@ createEffect(() => {
 
 ## Refs: Assigned During Render, Ready in `onMount`
 
-Use a definite-assignment local with the `ref` attribute. The ref is set before `onMount`; do DOM measurement there, never in the component body.
+Use a definite-assignment local with the `ref` attribute. The ref is set before `onMount`; perform DOM measurement in `onMount`, never in the component body.
 
 ```tsx
 let el!: HTMLDivElement;
@@ -67,4 +67,4 @@ createEffect(() => {
 
 ## Plain `let` Replaces `useRef` Boxes
 
-Any `let` in the component body is a stable instance variable, because the function runs once. No mutable-box wrapper is needed for non-reactive instance state.
+Any `let` in the component body is a stable instance variable because the function runs once. Non-reactive instance state does not need a mutable-box wrapper.

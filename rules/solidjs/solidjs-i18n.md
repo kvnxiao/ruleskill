@@ -9,12 +9,12 @@ description: "SolidJS internationalization rules; Paraglide JS strategy arrays a
 
 ## The Strategy Array Is an Ordered Fallback Chain
 
-`strategy` is evaluated left to right; the first entry that returns a locale wins and the rest are never checked. Two placement rules follow:
+`strategy` is evaluated left to right; the first entry that returns a locale wins and later entries are not checked. Place strategies as follows:
 
-- Strategies that always resolve go last. `url` with the default wildcard pattern and `baseLocale` never return `undefined`, so anything after them is dead.
+- Strategies that always resolve go last. `url` with the default wildcard pattern and `baseLocale` never return `undefined`, so strategies after them never run.
 - User choices beat automatic detection. Put persisted-preference strategies (`cookie`, `localStorage`) before `preferredLanguage`; the reverse means the browser language always wins and a manual selection never takes effect.
 
-Never ship an empty array — it is the most common cause of Paraglide's "No locale found" error — and end with `baseLocale` as the safety net. The default for URL-routed apps:
+Never ship an empty array — it is the most common cause of Paraglide's "No locale found" error — and end with `baseLocale` as the fallback. The default for URL-routed apps:
 
 ```js
 compile({
@@ -49,30 +49,30 @@ routeStrategies: [
 `setLocale()` updates the configured strategies and performs a full document navigation by design, keeping `<html lang>`, SSR state, and URLs in sync. Under client-side routing, a plain localized href changes the URL without a document load, so the UI never updates:
 
 ```tsx
-// Good
+// Good: force a full-document navigation.
 <button onClick={() => setLocale("de")}>Deutsch</button>
 
-// Bad: client-side navigation, UI stays in the old locale
+// Bad: client-side navigation leaves the UI in the old locale.
 <a href={localizeHref("/page", { locale: "de" })}>Deutsch</a>
 ```
 
-If a link must be used, force a full-document navigation (for example, the router's reload attribute on that link). `setLocale(locale, { reload: false })` plus `overwriteGetLocale(localeSignal)` is a narrow escape hatch for fully client-rendered surfaces whose strategy excludes `url`; do not use it to turn URL-routed locale changes into signal-driven re-renders.
+If a link must be used, force a full-document navigation (for example, the router's reload attribute on that link). `setLocale(locale, { reload: false })` plus `overwriteGetLocale(localeSignal)` is a limited alternative for fully client-rendered surfaces whose strategy excludes `url`; do not use it to turn URL-routed locale changes into signal-driven re-renders.
 
 ## Prefer Custom Strategies over Runtime Overrides
 
-To read the locale from a nonstandard source (sessionStorage, query param, user database), define a `custom-<name>` strategy and include it in the strategy array instead of reaching for `overwriteGetLocale()`: custom strategies compose with built-ins, fall through to the next entry when they return `undefined`, and isolate errors.
+To read the locale from a nonstandard source (sessionStorage, query param, user database), define a `custom-<name>` strategy and include it in the strategy array instead of using `overwriteGetLocale()`: custom strategies compose with built-ins, fall through to the next entry when they return `undefined`, and isolate errors.
 
 ```js
 defineCustomClientStrategy("custom-sessionStorage", {
   getLocale: () => sessionStorage.getItem("user-locale") ?? undefined,
   setLocale: (locale) => sessionStorage.setItem("user-locale", locale),
 });
-// strategy: ["custom-sessionStorage", "cookie", "baseLocale"]
+// Strategy order: ["custom-sessionStorage", "cookie", "baseLocale"]
 ```
 
 Client-side `getLocale` must be synchronous (`setLocale` may be async); server-side `getLocale` may be async for database or auth lookups. Define client strategies in app initialization before first render, and server strategies before the middleware handles requests.
 
-When an override is genuinely required, call `overwriteGetLocale`/`overwriteSetLocale` at the app entrypoint before rendering starts — a forgotten or late call is another "No locale found" source. On the server, the override must be request-scoped via `AsyncLocalStorage` (or the runtime's equivalent); a bare variable races across concurrent requests with different locales.
+When an override is required, call `overwriteGetLocale`/`overwriteSetLocale` at the app entrypoint before rendering starts; otherwise locale resolution can fail. On the server, the override must be request-scoped via `AsyncLocalStorage` (or the runtime's equivalent); a bare variable races across concurrent requests with different locales.
 
 ## `@solid-primitives/i18n` Patterns
 

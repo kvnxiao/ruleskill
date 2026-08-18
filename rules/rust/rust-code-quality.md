@@ -23,7 +23,7 @@ A `bool` parameter is opaque at the call site, and adjacent flags invite transpo
 // Bad: process(data, true, false) passes two anonymous flags.
 fn process(data: &str, is_verbose: bool, is_strict: bool) {}
 
-// Good
+// Good: name the states at the call site.
 #[derive(Debug, Clone, Copy)]
 pub enum Verbosity { Quiet, Normal, Verbose }
 
@@ -38,7 +38,7 @@ fn process(data: &str, verbosity: Verbosity, validation: ValidationMode) {}
 A `&str` discriminant accepts any string and forces a fallible catch-all arm. An enum makes the match exhaustive and the invalid case unrepresentable.
 
 ```rust
-// Bad
+// Bad: accepts arbitrary string discriminants.
 fn get_user_by_type(user_type: &str) -> Result<User> {
     match user_type {
         "admin" => { /* ... */ }
@@ -47,7 +47,7 @@ fn get_user_by_type(user_type: &str) -> Result<User> {
     }
 }
 
-// Good
+// Good: the enum makes the match exhaustive.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UserType { Admin, Regular, Guest }
 
@@ -65,37 +65,37 @@ fn get_user_by_type(user_type: UserType) -> Result<User> {
 Add `#[must_use]` when ignoring a value is likely a bug, and always give a custom message explaining why it matters.
 
 ```rust
-// Results and error-returning validators
-#[must_use = "errors must be handled, not silently ignored"]
+// Result-returning validators
+#[must_use = "handle validation errors to avoid silent failures"]
 pub fn validate_config(config: &Config) -> Result<(), ValidationError> { /* ... */ }
 
-// Builder types and their chained methods
-#[must_use = "builders must be used to construct the final value"]
+// Builder types and chained methods
+#[must_use = "use the builder to construct the final value"]
 pub struct QueryBuilder { /* ... */ }
 
 impl QueryBuilder {
-    #[must_use = "this returns a new builder with the filter added"]
+    #[must_use = "use the returned builder to retain the filter"]
     pub fn filter(mut self, f: Filter) -> Self { /* ... */ self }
 }
 
 // Expensive computations
-#[must_use = "computing the hash is expensive; use the result"]
+#[must_use = "use the computed hash because computing it is expensive"]
 pub fn compute_hash(data: &[u8]) -> Hash { /* ... */ }
 
-// Values representing a state change
-#[must_use = "the guard must be held to maintain the lock"]
+// Values that represent a state change
+#[must_use = "hold the guard to maintain the lock"]
 pub fn acquire_lock(&self) -> LockGuard<'_> { /* ... */ }
 
-#[must_use = "the previous value may need to be processed"]
+#[must_use = "process the previous value"]
 pub fn swap(&mut self, new_value: T) -> T {
     std::mem::replace(&mut self.value, new_value)
 }
 ```
 
-Skip it for side-effecting functions whose return is incidental, and for simple getters.
+Do not add it to side-effecting functions whose return is incidental or to simple getters.
 
 ```rust
-pub fn log_event(event: &Event) -> usize { /* bytes written; logging happened anyway */ }
+pub fn log_event(event: &Event) -> usize { /* bytes written; logging already occurred */ }
 pub fn len(&self) -> usize { self.items.len() }
 ```
 
