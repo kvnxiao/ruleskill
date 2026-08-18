@@ -13,7 +13,7 @@ this rule covers the rest — the prose summary, `# Arguments`, and
 `# Examples`.
 
 ```rust
-/// Processes the input data and returns a processed result.
+/// Process input data and return a processed result.
 ///
 /// # Arguments
 ///
@@ -30,17 +30,14 @@ this rule covers the rest — the prose summary, `# Arguments`, and
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn process(input: &str, options: Options) -> Result<ProcessedData> {
-    // Implementation
+    todo!()
 }
 ```
 
 ## Module Documentation
 
 ```rust
-//! Configuration management for the application.
-//!
-//! This module provides types and functions for loading, validating,
-//! and managing application configuration.
+//! Load and validate application configuration.
 //!
 //! # Examples
 //!
@@ -54,10 +51,10 @@ pub fn process(input: &str, options: Options) -> Result<ProcessedData> {
 
 ## Module `//!` Skeleton
 
-For a substantial module, follow a three-part skeleton: an **Overview** (bulleted list of the types, plus runnable examples), a **"What is X?"** concept section, then a **"When should I use X?"** decision guide that points at the alternatives.
+For a substantial module, follow a three-part skeleton: an **Overview** with the types and runnable examples, a **"What is X?"** concept section, and a **"When should I use X?"** decision guide that points to the alternatives.
 
 ```rust
-//! Facilities for civil (time-zone-less) datetimes.
+//! Provide facilities for civil (time-zone-less) datetimes.
 //!
 //! # Overview
 //!
@@ -72,18 +69,18 @@ For a substantial module, follow a three-part skeleton: an **Overview** (bullete
 //!
 //! # What is "civil" time?
 //!
-//! (the concept, in prose)
+//! Explain the civil-time model here.
 //!
 //! # When should I use civil time?
 //!
-//! (a decision guide contrasting the alternatives)
+//! Explain when civil time fits and how it differs from the alternatives.
 ```
 
 ## Crate Root as Cookbook and Spec
 
-The crate root is where a new user lands. Make it earn that:
+Because new users start at the crate root, use it to:
 
-- List what the crate supports, and — explicitly — what it does **not**, linking each gap to a tracking issue.
+- List what the crate supports and what it does **not**, linking each unsupported feature to a tracking issue.
 - State the panic policy ("APIs that panic by design are few and clearly documented as such").
 - Embed a short cookbook of runnable, task-oriented examples.
 
@@ -92,7 +89,7 @@ The crate root is where a new user lands. Make it earn that:
 Keep design rationale in top-level Markdown (PR-reviewable, one source of truth) and render it into the docs through a hidden documentation module.
 
 ```rust
-/// Longer-form documentation.
+/// Render design and platform documentation.
 pub mod _documentation {
     #[doc = include_str!("../DESIGN.md")]
     pub mod design {}
@@ -103,7 +100,7 @@ pub mod _documentation {
 
 ## Own Your `docs.rs` cfg Knob
 
-Use a crate-specific cfg name, not the shared `docsrs`, so another crate's use of `docsrs` can't accidentally toggle your nightly-only doc attributes.
+To prevent another crate from toggling your nightly-only doc attributes, use a crate-specific cfg name instead of the shared `docsrs`.
 
 ```toml
 [package.metadata.docs.rs]

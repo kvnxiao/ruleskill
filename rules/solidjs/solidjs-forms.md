@@ -5,14 +5,14 @@ description: "TanStack Form rules for SolidJS; headless form modules owning form
 
 # Forms
 
-`@tanstack/solid-form` is the form library. Forms are where UI state and business logic meet, so the state architecture split is applied at the line where it holds: field values, touched/dirty flags, and error display are UI machinery and live in the component's form instance; what *valid* means, the default values, and what submission *does* are headless domain code.
+`@tanstack/solid-form` is the form library. Keep field values, touched/dirty flags, and error display in the component's form instance. Keep validation semantics, default values, and submission behavior in headless domain code.
 
 ## Form Modules Own Options, Schema, and Submission
 
-Each form gets a module exporting the validation schema, shared `formOptions`, and a submit function that delegates to domain actions or mutations. All three are testable as plain TypeScript without rendering anything.
+Each form gets a module that exports the validation schema, shared `formOptions`, and a submit function that delegates to domain actions or mutations. These exports are testable as plain TypeScript without rendering anything.
 
 ```ts
-// src/state/checkout-form.ts
+// Domain module: src/state/checkout-form.ts
 import { formOptions } from "@tanstack/solid-form";
 import * as v from "valibot";
 
@@ -37,7 +37,7 @@ Validation uses a Standard Schema library (valibot, zod, arktype) passed to `val
 
 ## Components Render Fields
 
-The component spreads the module's options into `createForm` — options are function-wrapped, like every Solid adapter — and decides only how fields look. `field` is an accessor: `field().state.value`, `field().handleChange(…)`; forgetting the `field()` call is the classic React-porting mistake.
+The component spreads the module's options into `createForm`; Solid adapter options are function-wrapped, and the component decides only how fields look. `field` is an accessor: use `field().state.value` and `field().handleChange(…)`. Omitting the `field()` call reads the accessor object instead of its value.
 
 ```tsx
 const CheckoutForm: Component = () => {
@@ -87,4 +87,4 @@ Read derived form state (`canSubmit`, `isSubmitting`) through `form.Subscribe` w
 
 ## Draft State Stays in the Form
 
-The form instance is the UI-local home for in-progress values — do not mirror drafts into signals or stores. A value graduates out of the form only on submit, through the module's submit function, which is the single place form data touches business state or the server (typically via a mutation; see the data fetching rules).
+Keep in-progress values in the form instance; do not mirror drafts into signals or stores. Submit values through the module's submit function, which is the only path for form data to reach business state or the server (typically through a mutation; see the data fetching rules).

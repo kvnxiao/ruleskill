@@ -7,7 +7,7 @@ description: "SolidJS component rules; components run once, never destructure pr
 
 ## Components Run Exactly Once
 
-A component body is a setup script, not a render function. It never re-runs, so locals computed in the body are computed once, and closures are stable for the component's lifetime. All per-update logic belongs in JSX expressions, derived functions, memos, or effects.
+A component body is setup code, not a render function. The body runs once, so locals computed there are computed once and closures remain stable for the component's lifetime. Put per-update logic in JSX expressions, derived functions, memos, or effects.
 
 ## No Early Returns on Reactive State
 
@@ -19,13 +19,13 @@ interface ProfileProps {
   user: User;
 }
 
-// Bad: loading is checked once; the component never re-renders past the spinner
+// Bad: the loading check runs once, so the component stays on the spinner.
 const Profile: Component<ProfileProps> = (props) => {
   if (props.loading) return <Spinner />;
   return <div>{props.user.name}</div>;
 };
 
-// Good
+// Good: keep the condition in JSX.
 const Profile: Component<ProfileProps> = (props) => (
   <Show when={!props.loading} fallback={<Spinner />}>
     <div>{props.user.name}</div>
@@ -38,11 +38,11 @@ const Profile: Component<ProfileProps> = (props) => (
 Props are getter-backed objects; destructuring or copying to a local evaluates the getter once and severs reactivity. Access `props.x` at the point of use, or re-wrap as an accessor.
 
 ```tsx
-// Bad: frozen at first run
+// Bad: both declarations read the getter once.
 const { name } = props;
 const name = props.name;
 
-// Good
+// Good: access props at the point of use.
 return <div>{props.name}</div>;
 const name = () => props.name; // when a local accessor is needed
 ```
@@ -52,10 +52,10 @@ const name = () => props.name; // when a local accessor is needed
 Default-parameter destructuring breaks reactivity; rest-spread destructuring does too. Use the helpers, which preserve getters.
 
 ```tsx
-// Bad
+// Bad: parameter and rest destructuring read props once.
 const Button = ({ size = "md", ...rest }) => {};
 
-// Good
+// Good: merge defaults and split local props with Solid helpers.
 interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "sm" | "md" | "lg";
 }
@@ -88,6 +88,6 @@ Use `<Dynamic component={...}>` from `solid-js/web` to render a tag or component
 <Dynamic component={views[mode()]} item={props.item} />
 ```
 
-## Primitives Have No Hook Rules
+## Primitives Do Not Follow React Hook Rules
 
-Signals, memos, and effects may be created in conditionals, loops, event handlers, or outside components entirely (given an owner). React's rules of hooks do not apply; do not contort code to satisfy them.
+Signals, memos, and effects may be created in conditionals, loops, event handlers, or outside components entirely when an owner exists. React's rules of hooks do not apply; do not restructure code to satisfy them.

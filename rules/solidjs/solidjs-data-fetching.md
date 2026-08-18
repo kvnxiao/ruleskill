@@ -7,22 +7,22 @@ description: "SolidJS server-state rules; TanStack Query with queryOptions facto
 
 ## TanStack Query Owns Server State
 
-Server data lives in the Query cache — not fetched ad hoc in components, and never copied into stores. Raw `fetch` in an effect loses tracking after the first `await` and handles neither races, caching, deduplication, nor retries. `useQuery` from `@tanstack/solid-query` is the default for reads; its `data` is backed by a Solid resource, so Suspense and transitions work out of the box.
+Server data lives in the Query cache; do not fetch it ad hoc in components or copy it into stores. Raw `fetch` in an effect loses tracking after the first `await` and does not provide race handling, caching, deduplication, or retries. `useQuery` from `@tanstack/solid-query` is the default for reads; its `data` is backed by a Solid resource, so Suspense and transitions work without additional wiring.
 
 ```tsx
-// Bad
+// Bad: fetches data in an async effect.
 createEffect(async () => setUser(await fetchUser(userId())));
 
-// Good
+// Good: use the query cache.
 const user = useQuery(() => userQueryOptions(userId()));
 ```
 
 ## Define `queryOptions` in Domain Modules
 
-Query keys, fetchers, and staleness policy are business decisions; house them in the domain module (see the state architecture rules) as `queryOptions` factories. Components, router loaders, and `queryClient` calls all consume the same factory, so keys can never drift.
+Query keys, fetchers, and staleness policy are business decisions; define them in the domain module (see the state architecture rules) as `queryOptions` factories. Reuse the same factory in components, router loaders, and `queryClient` calls to keep query keys consistent.
 
 ```ts
-// src/state/todos.ts
+// Domain module: src/state/todos.ts
 import { queryOptions } from "@tanstack/solid-query";
 
 export function todosQueryOptions(filter: TodoFilter) {
@@ -36,7 +36,7 @@ export function todosQueryOptions(filter: TodoFilter) {
 
 ## Options In as a Function, Results Out Fine-Grained
 
-This is the pack-wide adapter convention (see the ecosystem rules); for Query specifically: `useQuery` takes an accessor returning options — signals read inside it are tracked, and changes re-key or re-run the query. Gate dependent queries with `enabled` instead of conditional calls. The result is a fine-grained store: read `query.data`, `query.isPending`, `query.isError` as properties inside tracking scopes, and never destructure it. Being store-backed also means `query.data` is a proxy — `unwrap` it before cloning, serializing, or sending it across IPC (see the stores and state rules).
+This is the pack-wide adapter convention (see the ecosystem rules). For Query, `useQuery` takes an accessor returning options; signals read inside it are tracked, and changes re-key or re-run the query. Gate dependent queries with `enabled` instead of conditional calls. The result is a fine-grained store: read `query.data`, `query.isPending`, and `query.isError` as properties inside tracking scopes, and never destructure it. Because the result is store-backed, `query.data` is a proxy; call `unwrap` before cloning, serializing, or sending it across IPC (see the stores and state rules).
 
 ```tsx
 const [todo, setTodo] = createSignal(0);
@@ -46,7 +46,7 @@ const todoQuery = useQuery(() => ({
   enabled: todo() > 0,
 }));
 
-// Bad: destructuring severs reactivity, exactly like props and stores
+// Bad: destructuring severs reactivity, as it does for props and stores.
 const { data, isPending } = useQuery(() => todosQueryOptions("all"));
 ```
 
@@ -67,7 +67,7 @@ Reading `query.data` under a `Suspense` boundary triggers the fallback while loa
 `useMutation` also takes function-wrapped options. What a mutation does — the request, optimistic update, rollback, and which queries it invalidates — is business logic and belongs in the domain module via `mutationOptions`; the component only calls `mutation.mutate`.
 
 ```ts
-// src/state/todos.ts
+// Domain module: src/state/todos.ts
 import { mutationOptions, type QueryClient } from "@tanstack/solid-query";
 
 export function addTodoMutationOptions(queryClient: QueryClient) {
@@ -88,7 +88,7 @@ const addTodo = useMutation(() => addTodoMutationOptions(queryClient));
 
 ## Integrate the Router Through the Cache
 
-Put the `QueryClient` in router context and warm the cache in loaders with `ensureQueryData`; the component subscribes with `useQuery` on the same options factory. With `defaultPreload: "intent"`, hover and focus start fetching before navigation.
+Put the `QueryClient` in router context and populate the cache in loaders with `ensureQueryData`; the component subscribes with `useQuery` on the same options factory. With `defaultPreload: "intent"`, hover and focus start fetching before navigation.
 
 ```tsx
 export const Route = createFileRoute("/todos")({
@@ -107,7 +107,7 @@ Route hooks return accessors in the Solid adapter — `Route.useParams()`, `Rout
 
 ## Split Code at Routes, Transition Between States
 
-Route-level code splitting uses TanStack Router's lazy route files: move a route's component into `posts.lazy.tsx` with `createLazyFileRoute` while the loader and route config stay eager. For component-level splitting, `lazy(() => import("./HeavyEditor"))` from `solid-js` renders under the same `Suspense` boundaries as data — the `React.lazy` habit maps directly. When a signal change swaps Suspense-bound content (tab switches, filter changes), wrap the write in `useTransition` from `solid-js` to keep the current UI visible instead of flashing fallbacks.
+Route-level code splitting uses TanStack Router's lazy route files: move a route's component into `posts.lazy.tsx` with `createLazyFileRoute` while the loader and route config stay eager. For component-level splitting, `lazy(() => import("./HeavyEditor"))` from `solid-js` renders under the same `Suspense` boundaries as data. When a signal change swaps Suspense-bound content (tab switches or filter changes), wrap the write in `useTransition` from `solid-js` to preserve the current UI while the new content loads.
 
 ```tsx
 const [pending, start] = useTransition();

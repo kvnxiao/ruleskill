@@ -5,7 +5,7 @@ description: "SolidJS testing rules; vitest + @solidjs/testing-library stack, re
 
 # Testing
 
-## Blessed Stack
+## Recommended Stack
 
 Use `vitest` + `jsdom` + `@solidjs/testing-library` + `@testing-library/user-event` + `@testing-library/jest-dom`. `vite-plugin-solid` ≥ 2.8.2 configures vitest for Solid automatically; if `solid-js` loads twice (symptoms: "dispose is undefined", router failing to load), fix `resolve.conditions`/dep inlining rather than working around it in tests.
 
@@ -14,10 +14,10 @@ Use `vitest` + `jsdom` + `@solidjs/testing-library` + `@testing-library/user-eve
 The thunk preserves Solid's ownership and reactive root. Cleanup is automatic per test.
 
 ```tsx
-// Bad
+// Bad: passes an element instead of a render function.
 render(<Counter />);
 
-// Good
+// Good: passes a render function.
 const { getByRole } = render(() => <Counter />);
 ```
 
@@ -41,8 +41,7 @@ render(() => <Profile />, {
   wrapper: (props) => <AuthProvider>{props.children}</AuthProvider>,
 });
 
-// TanStack Router: render a real router over memory history; routing is
-// async, so the first query must be an async findBy*
+// Routing is asynchronous, so query rendered content with an async findBy* method.
 import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/solid-router";
 
 const router = createRouter({

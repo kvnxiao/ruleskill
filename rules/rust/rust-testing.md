@@ -54,7 +54,7 @@ datatest_stable::harness!(run_test, "resources/mdtest", r"^.*\.md$");
 
 ## Make the shared test helper assert invariants
 
-A helper that every test funnels through should check invariants on each call, not just diff a snapshot. Then a bug in any code path fails the nearest test. Good invariants: applying a fix **converges** (a second application is a no-op), and a transformation introduces **no new syntax errors**.
+A shared helper called by every test should check invariants on each call, not just diff a snapshot. Each invariant failure then identifies the test that called the helper. Good invariants include **convergence** (a second application is a no-op) and introducing **no new syntax errors** during a transformation.
 
 ## Compile-fail UI tests with `trybuild`
 
@@ -91,7 +91,7 @@ Lock the size and trait surface of hot types so a careless change fails at compi
 ```rust
 use static_assertions::{assert_eq_size, assert_impl_all};
 
-assert_eq_size!(NodeId, Option<NodeId>); // NonZeroU32 niche: Option is free
+assert_eq_size!(NodeId, Option<NodeId>); // NonZeroU32 niche: Option has the same size as NodeId.
 assert_impl_all!(NodeId: Ord, Send, Sync);
 ```
 
@@ -148,7 +148,7 @@ slow-timeout = { period = "1s", terminate-after = 60 } # terminate on deadlock
 
 ## CI-enforce generated-code freshness
 
-If you check in generated code, fail CI when regenerating it would produce a diff — otherwise the checked-in copy silently rots.
+If you check in generated code, fail CI when regenerating it would produce a diff; otherwise the checked-in copy can become stale.
 
 ```sh
 cargo run -p my-cli -- generate

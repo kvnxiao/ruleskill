@@ -5,11 +5,11 @@ description: "Public API design for libraries; ergonomic, semver-evolvable inter
 
 # API Design
 
-Patterns for public interfaces that stay ergonomic for callers and evolvable for you.
+Use public interfaces that stay ergonomic for callers and can evolve without breaking changes.
 
 ## Options struct + `impl Into` for overload-like ergonomics
 
-Rust has no function overloading. Accept `impl Into<Options>` and provide a family of `From` impls: the simple call passes a bare value, richer calls pass a tuple or the full struct. No builder ceremony for the common case, and one obvious home for optional params.
+Rust has no function overloading. Accept `impl Into<Options>` and provide a family of `From` impls: the simple call passes a bare value, and richer calls pass a tuple or the full struct. This avoids a builder for common calls and keeps optional parameters in `RoundOptions`.
 
 ```rust
 pub struct RoundOptions { smallest: Unit, increment: i64 }
@@ -22,7 +22,7 @@ impl From<(Unit, i64)> for RoundOptions {
 }
 
 impl Span {
-    // span.round(Unit::Hour) | span.round((Unit::Minute, 15)) | span.round(RoundOptions { .. })
+    // Common forms: Unit, (Unit, i64), or RoundOptions.
     pub fn round<R: Into<RoundOptions>>(self, options: R) -> Result<Span> {
         let options = options.into();
         // ...
@@ -35,11 +35,11 @@ impl Span {
 Validating inside each setter makes some valid end states unreachable through valid intermediate states.
 
 ```rust
-// Bad: `day(29)` validates against the current month. Setting the day before
-// the month rejects Feb 29 even when you're about to switch to a leap year.
+// Bad: setting the day before the month validates Feb 29 against the current
+// month and rejects it before the leap year is selected.
 date.with().day(29).month(2).build()  // spurious error
 
-// Good: setters only store; `build()` validates the whole thing once.
+// Good: setters store values, and `build()` validates the complete date once.
 date.with()
     .month(2)
     .day(29)   // order-independent, not checked yet
@@ -53,15 +53,15 @@ A derived `PartialEq` compares field-by-field. That is often wrong: two values c
 ```rust
 // Bad: derived PartialEq makes 2.hours() != 120.minutes() despite equal duration.
 
-// Good, option 1 — hand-write over the meaningful field:
+// Compare the meaningful field:
 impl PartialEq for Zoned {
     fn eq(&self, other: &Self) -> bool {
         self.timestamp() == other.timestamp() // compare the instant, ignore the zone
     }
 }
 
-// Good, option 2 — withhold equality when "equal" is ambiguous, and expose an
-// explicit opt-in newtype for the field-wise comparison:
+// Withhold equality when "equal" is ambiguous, and expose an explicit opt-in
+// newtype for field-wise comparison:
 #[repr(transparent)]
 pub struct SpanFieldwise(pub Span); // via `span.fieldwise()`, only when asked for
 ```
@@ -69,7 +69,7 @@ pub struct SpanFieldwise(pub Span); // via `span.fieldwise()`, only when asked f
 ## `#[non_exhaustive]` on config enums expected to grow
 
 ```rust
-/// Non-exhaustive so new strategies can be added in a semver-compatible release.
+/// Allow new strategies in semver-compatible releases.
 #[non_exhaustive]
 pub enum Disambiguation {
     Compatible,
@@ -103,7 +103,7 @@ let span = n.try_hours()?;        // for untrusted input
 
 ## Sealed traits
 
-A trait bounded on a `pub(crate)` `Sealed` supertrait is public to *call* but closed to *implement*. You can add methods later without a major bump, and no downstream type can implement it.
+A trait bounded on a `pub(crate)` `Sealed` supertrait can be called publicly but cannot be implemented downstream. You can add methods later without a major bump, and no downstream type can implement it.
 
 ```rust
 pub trait Context<T>: private::Sealed {
@@ -118,13 +118,13 @@ mod private {
 
 ## Hide macro glue behind `#[doc(hidden)]`
 
-Code your macros generate needs public items to call, but humans should not. Put them in a `#[doc(hidden)] pub mod __private`; they are not part of your semver surface.
+Generated macro code needs public items for expansion. Put them in a `#[doc(hidden)] pub mod __private` and keep them outside the intended semver surface.
 
 ```rust
 #[doc(hidden)]
 pub mod __private {
     pub use core::result::Result;
-    // re-exports the generated code depends on ...
+    // Re-export items used by generated code.
 }
 ```
 
@@ -164,7 +164,7 @@ impl TryFrom<std::time::Duration> for SignedDuration {
 Applies when you publish a library.
 
 ```rust
-// Toggle `no_std` behind a feature; pull in `alloc` where available.
+// Enable `no_std` when the std feature is disabled.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "alloc")]
@@ -178,10 +178,10 @@ std = ["alloc"]        # tier features: std ⊃ alloc ⊃ core
 alloc = []
 derive = ["dep:my_derive"] # optional proc-macro, off by default
 
-# Removed feature kept as a documented no-op so `features = ["backtrace"]` still builds.
+# Preserve the removed feature as a documented no-op so `features = ["backtrace"]` still builds.
 backtrace = []
 
-# Footgun documented inline: does not preserve identity — enable only if intended.
+# Semantic trade-off: does not preserve identity — enable only if intended.
 rc = []
 ```
 
@@ -208,12 +208,12 @@ Before writing `unsafe`, search for a safe wrapper crate:
 ```rust
 #![deny(unsafe_op_in_unsafe_fn)]
 
-// Every unsafe block states the invariant it relies on.
+// State the invariant required by each unsafe block.
 // Safety: `ptr` is non-null and points to an initialized `T` (checked above).
 let value = unsafe { &*ptr };
 ```
 
-Keep unsafe blocks minimal, never expose them in a public API (wrap in a safe abstraction), and document caller obligations in a `/// # Safety` section. Run `cargo +nightly miri test` over crates containing `unsafe`.
+Keep unsafe blocks minimal, do not expose them in a public API (wrap them in a safe abstraction), and document caller obligations in a `/// # Safety` section. Run `cargo +nightly miri test` over crates containing `unsafe`.
 
 Lock the public auto-trait surface with `assert_send::<T>()`-style tests, and add drop-count tests for by-value ownership tricks.
 
@@ -222,7 +222,7 @@ Lock the public auto-trait surface with `assert_send::<T>()`-style tests, and ad
 Generated code runs in the caller's namespace, so it must be self-contained.
 
 ```rust
-// Inside a derive macro's `quote!`:
+// In a derive macro's `quote!` expansion:
 quote! {
     #[automatically_derived]
     #[allow(unused_qualifications)]

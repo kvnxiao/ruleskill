@@ -11,7 +11,7 @@ Use `.tsx` files with `"jsx": "preserve"` and `"jsxImportSource": "solid-js"` in
 
 ## Component Types Do Not Imply Children
 
-`Component<P>` is `(props: P) => JSX.Element` with no implicit children — the `React.FC` habit of free `children` does not carry over. Pick the type that states the contract:
+`Component<P>` is `(props: P) => JSX.Element` with no implicit children — the `React.FC` habit of implicit `children` does not carry over. Pick the type that states the contract:
 
 ```tsx
 const Card: ParentComponent<CardProps> = (props) => (
@@ -31,10 +31,10 @@ const Icon: VoidComponent<IconProps> = (props) => <svg>{/* … */}</svg>;
 A signature taking `T` freezes the value at call time. Take `Accessor<T>` (or a prop) so the callee reads reactively.
 
 ```tsx
-// Bad: value captured once
+// Bad: captures the value once.
 function useTitle(title: string) {}
 
-// Good
+// Good: accepts an accessor and reads it reactively.
 function useTitle(title: Accessor<string>) {
   createEffect(() => (document.title = title()));
 }
@@ -42,7 +42,7 @@ function useTitle(title: Accessor<string>) {
 
 `createSignal<T>()` without an initial value yields `Accessor<T | undefined>`; providing an initial value narrows to `T`. A stored signal pair is `Signal<T> = [Accessor<T>, Setter<T>]`.
 
-## Setter Gotcha for Function Values
+## Function-Valued Setters
 
 A function passed to a setter is treated as an updater. To store a function in a signal, wrap it.
 
@@ -52,7 +52,7 @@ setHandler(() => onSelect);
 
 ## Typed Events
 
-`JSX.EventHandler<HTMLInputElement, InputEvent>` types `event.currentTarget` to the element; `event.target` stays the generic `Element`. Inline handlers get inference for free.
+`JSX.EventHandler<HTMLInputElement, InputEvent>` types `event.currentTarget` to the element; `event.target` stays the generic `Element`. Inline handlers get inference automatically.
 
 ```tsx
 const onInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (e) =>
@@ -70,4 +70,4 @@ let maybe: HTMLDivElement | undefined;          // conditionally rendered
 
 ## Store Updates
 
-Type stores at creation with `createStore<StateShape>({ … })`. Path setters are typed but get unwieldy on deep paths; `produce` often types more cleanly for deep updates.
+Type stores at creation with `createStore<StateShape>({ … })`. Path setters are typed but become unwieldy on deep paths; `produce` often gives clearer types for deep updates.

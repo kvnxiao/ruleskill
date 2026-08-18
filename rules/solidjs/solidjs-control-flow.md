@@ -5,15 +5,15 @@ description: "SolidJS control-flow components; Show over ternaries, For vs Index
 
 # Control Flow
 
-Raw `.map()` and ternaries work in Solid, but the whole expression re-evaluates whenever any dependency changes: `.map()` recreates every DOM node in the list, and a ternary recreates its branch on every value change, not just on truthiness change. The control-flow components memoize and diff instead.
+Raw `.map()` and ternaries work in Solid, but each expression re-evaluates whenever a dependency changes: `.map()` recreates every DOM node in the list, and a ternary recreates its branch on every value change, not only when truthiness changes. Control-flow components memoize and diff the result.
 
 ## `<Show>` for Conditionals
 
 ```tsx
-// Bad: branch re-created on every user() change
+// Bad: the branch is recreated on every user() change.
 {user() ? <Profile user={user()} /> : <Login />}
 
-// Good: re-renders only when truthiness flips
+// Good: the branch updates only when truthiness changes.
 <Show when={user()} fallback={<Login />}>
   <Profile user={user()} />
 </Show>
@@ -25,17 +25,17 @@ The callback form narrows nullability and is the idiomatic way to consume the `w
 <Show when={user()}>{(u) => <div>{u().name}</div>}</Show>
 ```
 
-`keyed` passes the value directly but re-creates the whole branch whenever the `when` value changes identity. Use it only when remount-on-change is wanted; avoid it for frequently-changing references.
+`keyed` passes the value directly but re-creates the whole branch whenever the `when` value changes identity. Use it only when the branch must remount when identity changes; avoid it for frequently changing references.
 
 ## `<For>` for Object Lists, `<Index>` for Value Slots
 
 There is no `key` prop. `<For>` keys by item reference: nodes move and are reused when objects reorder. `<Index>` fixes nodes by position and passes the item as a signal: use it for lists of primitives or fixed slots whose contents change (form inputs), where `<For>` would destroy and recreate nodes and drop input focus.
 
 ```tsx
-// Objects with stable identity that may reorder
+// Use For for objects with stable identity that may reorder.
 <For each={todos()}>{(todo, i) => <TodoRow todo={todo} index={i()} />}</For>
 
-// Value-typed list in fixed positions; item is the signal
+// Use Index for value-typed lists in fixed positions; item is the signal.
 <Index each={inputs()}>{(value, i) => <input value={value()} />}</Index>
 ```
 
