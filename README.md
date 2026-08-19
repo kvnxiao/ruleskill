@@ -44,7 +44,7 @@ ruleskill uninstall rust --target claude --dry-run # preview the removals
 ruleskill uninstall --all # remove every rule pack in the catalog
 ```
 
-`ruleskill uninstall --all` covers the packs in the catalog, so it never deletes a skill that `ruleskill` did not install. If you drop a rule pack from the catalog, remove its output by hand or run `install --all --prune`. Uninstall prunes `skills/` and `rules/` once they are empty, but keeps `.claude/` and `.agents/` so harness auto-detection and your other settings survive.
+`ruleskill uninstall --all` removes generated paths for every pack currently in the catalog; it does not scan other skill folders. If you drop a rule pack from the catalog, remove its output by hand or run `install --all --prune`. Uninstall prunes `skills/` and `rules/` once they are empty, but keeps `.claude/` and `.agents/` so harness auto-detection and your other settings survive.
 
 With `install --all`, `--prune` removes only outputs recorded by an earlier pruned install and now absent from the catalog. `.ruleskill-prune.toml` records owned outputs separately for Codex and Claude, so other skills and rule pointers remain untouched.
 
