@@ -168,6 +168,10 @@ fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool)
             if let Some(content) = rule_md.as_deref() {
                 let report = write_generated(&path, content, mode, force)?;
                 print_report(&report, &mut stdout)?;
+            } else if path.is_dir() {
+                return Err(anyhow!(
+                    "stale rule pointer path is a directory; remove or rename it before installing: {path}"
+                ));
             } else if let Some(report) = remove_generated(&path, mode)? {
                 print_removal(&report, &mut stdout)?;
                 if let Some(parent) = path.parent() {

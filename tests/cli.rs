@@ -507,6 +507,33 @@ fn install_without_paths_dry_run_reports_stale_claude_rule_file() {
 }
 
 #[test]
+fn install_without_paths_refuses_directory_at_stale_pointer_path() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "without-paths");
+    write(
+        catalog.path().join("rules/without-paths/example.md"),
+        "# Ex\n",
+    );
+
+    let repo = TempDir::new().unwrap();
+    let stale_rule = repo.path().join(".claude/rules/without-paths-rules.md");
+    let retained_file = stale_rule.join("retained.txt");
+    write(&retained_file, "retained\n");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(["install", "without-paths", "--target", "claude"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "stale rule pointer path is a directory; remove or rename it before installing",
+        ));
+
+    assert_file_equals(retained_file, "retained\n");
+}
+
+#[test]
 fn validate_fails_for_blank_paths() {
     let catalog = minimal_catalog();
     write(
