@@ -114,7 +114,7 @@ Context is not a state manager under this architecture; it is an instancing and 
 - **SSR**: a module singleton is shared across concurrent requests on the server, leaking one user's state into another's. Instantiate the factory once per request in a root provider; components are unaffected because they only ever see the returned API shape.
 - **Per-subtree instances**: state that is one-per-region rather than one-per-app — each wizard's progress, each editor pane, each data grid's sort and filter state. A provider per subtree gives every instance its own factory result where a module singleton would force sharing.
 - **Dependency injection**: swapping the implementation a subtree sees — an API client carrying session auth, feature flags, or a stub state module in tests and stories — without module-mocking machinery.
-- **Compound components**: parent/child families (Tabs/Tab, Accordion/Item) sharing private coordination state. That is UI state scoped to the family and inherently multi-instance; it never belongs in a state module.
+- **Compound components**: parent/child families (Tabs/Tab, Accordion/Item) sharing private coordination state. This UI state is scoped to the family and belongs in the component family rather than a state module.
 
 ## Test Modules Without Rendering
 

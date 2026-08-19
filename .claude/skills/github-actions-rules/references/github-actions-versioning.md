@@ -39,7 +39,11 @@ Repository-local actions use `uses: ./path`. That syntax accepts no ref, so comm
 
 When a project deliberately follows a moving Rust channel and trusts `dtolnay/rust-toolchain`, permit `dtolnay/rust-toolchain@stable` or `@nightly` as a documented exception.
 
-For a high-security repository, pin a revision from the action's `master` branch and select the channel through the `toolchain` input:
+The action documents this form in its [usage guidance](https://github.com/dtolnay/rust-toolchain).
+
+## Pin toolchain actions for high-security repositories (Conditional)
+
+For a high-security repository, follow the action's [usage guidance](https://github.com/dtolnay/rust-toolchain) to pin a revision from its `master` branch and select the channel through the `toolchain` input:
 
 ```yaml
 - uses: dtolnay/rust-toolchain@<full-commit-sha> # master
@@ -47,11 +51,9 @@ For a high-security repository, pin a revision from the action's `master` branch
     toolchain: stable
 ```
 
-The action documents both forms in its [usage guidance](https://github.com/dtolnay/rust-toolchain).
-
 ## Update pins through automated dependency tooling with review (Default)
 
-Default action and reusable-workflow maintenance to automated dependency updates with human review. Dependabot is one supported implementation. When a SHA line ends with a semver comment, Dependabot updates both the SHA and that comment:
+Automated dependency updates with human review are the default for action and reusable-workflow maintenance. Dependabot is one supported implementation. When a SHA line ends with a semver comment, Dependabot updates both the SHA and that comment:
 
 ```yaml
 - uses: actions/checkout@<full-commit-sha> # vX.Y.Z

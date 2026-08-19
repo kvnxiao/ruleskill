@@ -48,7 +48,7 @@ date.with()
     .build()?
 ```
 
-## Don't derive `Eq`/`Ord`/`PartialEq` reflexively (Default)
+## Derive equality and ordering from semantics (Default)
 
 A derived `PartialEq` compares field by field. Default to a semantic comparison or omit equality when values can be equivalent despite different representations. Derive equality when structural equality is the intended contract.
 
@@ -68,7 +68,7 @@ pub struct SpanFieldwise(pub Span);
 When a public configuration enum is expected to gain variants, mark it `#[non_exhaustive]` to permit additions in compatible releases.
 
 ```rust
-/// Allow new strategies in semver-compatible releases.
+/// Select how an ambiguous local time is resolved.
 #[non_exhaustive]
 pub enum Disambiguation {
     Compatible,
@@ -219,7 +219,7 @@ Prefer a maintained safe wrapper when one covers the required API:
 | OpenSSL | `openssl-sys` | `openssl` |
 | Memory | raw pointers | `bytemuck`, `zerocopy` |
 
-Run `cargo +nightly miri test` over crates containing `unsafe` unless the project cannot support a nightly test job.
+Crates containing `unsafe` default to `cargo +nightly miri test`; projects without nightly test support can omit this job.
 
 For a public library, default to `assert_send::<T>()`-style tests for the intended auto-trait surface. When code uses by-value ownership tricks, add drop-count tests.
 

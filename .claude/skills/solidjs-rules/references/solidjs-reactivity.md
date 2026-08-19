@@ -7,7 +7,7 @@ description: "Core SolidJS reactivity rules; tracking scopes, derived functions 
 
 ## Read Signals Inside Tracking Scopes (Required)
 
-Dependency tracking happens only when a signal getter is called inside a tracking scope: JSX expressions, `createEffect`, `createMemo`, `createRenderEffect`, or control-flow component props. A read outside those scopes evaluates once and never updates. A common symptom is "renders once, then never changes". A setup-time value freezes the read, while an accessor defers it to a tracking scope:
+Dependency tracking happens only when a signal getter is called inside a tracking scope: JSX expressions, `createEffect`, `createMemo`, `createRenderEffect`, or control-flow component props. A read outside those scopes evaluates once and never updates. A common symptom is "renders once, then never changes". A setup-time read is fixed, while an accessor defers evaluation to a tracking scope:
 
 ```tsx
 const frozenDoubled = count() * 2;

@@ -34,7 +34,7 @@ for value in 0..1000 {
 }
 ```
 
-## Avoid unnecessary copies (Default)
+## Borrow or consume collections intentionally (Default)
 
 Borrow a collection when it remains in use, and consume it with `into_iter()` when ownership can move to the loop.
 
@@ -48,7 +48,7 @@ for item in collection.into_iter() {
 }
 ```
 
-Use `drain(..)` when the empty allocation will be reused or when only a subrange must be removed. Do not use a full-range drain merely to consume a collection; `clippy::iter_with_drain` identifies that case.
+Use `drain(..)` when the empty allocation will be reused or when only a subrange must be removed. Default full-range consumption to `into_iter()`; `clippy::iter_with_drain` identifies a full-range drain used only for consumption.
 
 ## Fast hashing for internal maps (Conditional)
 
@@ -107,7 +107,7 @@ const DEFAULT_BUFFER_CAPACITY: usize = 64 * (1 << 10);
 
 ## Release debug information (Default)
 
-Preserve line-table debug information in release builds for profilers and backtraces unless artifact size measurements require stripping it.
+Line-table debug information remains in release builds for profilers and backtraces unless artifact size measurements require stripping it.
 
 ```toml
 [profile.release]

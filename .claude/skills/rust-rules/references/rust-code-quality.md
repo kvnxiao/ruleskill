@@ -35,7 +35,7 @@ pub enum ValidationMode { Lenient, Strict }
 fn process(data: &str, verbosity: Verbosity, validation: ValidationMode) {}
 ```
 
-## Avoid Stringly-Typed Code (Default)
+## Prefer domain types after string boundaries (Default)
 
 A `&str` discriminant accepts any string and forces a fallible catch-all arm:
 
@@ -66,7 +66,7 @@ fn get_user_by_type(user_type: UserType) -> Result<User> {
 
 ## Use `#[must_use]` strategically (Default)
 
-Add `#[must_use]` when discarding the annotated type or return value likely indicates a bug. Add a message only when it gives the caller a non-obvious corrective action. Types such as `Result` already carry the attribute, so a function returning them usually needs no additional annotation.
+When discarding an annotated type or return value likely indicates a bug, default it to `#[must_use]`. A message is appropriate only when it gives the caller a non-obvious corrective action. Types such as `Result` already carry the attribute, so a function returning them usually needs no additional annotation.
 
 ```rust
 #[must_use]
@@ -86,7 +86,7 @@ impl Lock {
 }
 ```
 
-Do not add it to side-effecting functions whose return is incidental, simple getters, or expensive computations merely because the work has a cost.
+Side-effecting functions whose return is incidental, simple getters, and expensive computations with no discard bug do not meet this criterion. Work cost alone does not justify the attribute.
 
 ```rust
 pub fn log_event(event: &Event) -> usize { todo!() }
@@ -107,7 +107,7 @@ pub fn validate_name(name: &str) -> bool {
 }
 ```
 
-Use `impl AsRef<T>` when callers commonly hold multiple borrowed or owned representations:
+An `impl AsRef<T>` parameter is appropriate when callers commonly hold multiple borrowed or owned representations:
 
 ```rust
 use camino::Utf8Path;
@@ -118,7 +118,7 @@ pub fn read_config(path: impl AsRef<Utf8Path>) -> Result<Config> {
 }
 ```
 
-Use `impl Into<T>` when the function needs ownership and conversion at the boundary avoids repeated caller boilerplate:
+An `impl Into<T>` parameter is appropriate when the function needs ownership and conversion at the boundary avoids repeated caller boilerplate:
 
 ```rust
 impl User {

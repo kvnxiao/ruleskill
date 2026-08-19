@@ -27,7 +27,7 @@ For projects using this rule pack, default to the TanStack Solid adapter for the
 | AI chat and agents | `@tanstack/ai-solid` | `useChat` | Beta |
 | Devtools shell | `@tanstack/solid-devtools` | `TanStackDevtools` | Alpha |
 
-Prefer stable packages. A prerelease dependency needs an exact version, a named owner, an update policy, and an exit condition recorded in project documentation. Treat a pre-alpha package such as `@tanstack/solid-charts` as an explicit architecture decision rather than a default.
+Stable packages are the default. A prerelease dependency needs an exact version, a named owner, an update policy, and an exit condition recorded in project documentation. A pre-alpha package such as `@tanstack/solid-charts` requires an explicit architecture decision.
 
 ## UI Components: solid-ui on Kobalte and Corvu (Default)
 
@@ -57,8 +57,8 @@ Default to `@inlang/paraglide-js` for compiled, typed messages and framework-ind
 - With TanStack Start, use `paraglideMiddleware`, router rewrites with `localizeUrl` and `deLocalizeUrl`, and an ordered strategy array.
 - Call compiled message functions from components or domain modules without a UI hook.
 - Use `@solid-primitives/i18n` when instant in-app locale switching with fine-grained reactivity matters more than generated message types.
-- Avoid `solid-i18next` because its upstream repository is archived.
+- The archived `solid-i18next` repository is not a maintained choice.
 
-## Do Not Confuse the Stores (Default)
+## Distinguish application and TanStack stores (Default)
 
 Use `solid-js/store` for application state. `@tanstack/solid-store` is the state engine used by TanStack libraries; when a library returns one of its stores, subscribe with `useSelector(store, selector)`. Its Solid adapter retains `useStore` only as a deprecated alias.

@@ -51,7 +51,7 @@ export function Select<T>(props: SelectProps<T>) {
 
 ## Name Props `<ComponentName>Props` (Default)
 
-Name a component-owned contract `<ComponentName>Props`. When several components share a domain contract, use the domain name instead of renaming the same shape for each component. Avoid generic names such as `Props` that lose context when imported or moved.
+A component-owned contract defaults to `<ComponentName>Props`. When several components share a domain contract, the shared type uses the domain name instead of repeating the shape under component-specific names. Generic names such as `Props` lose context when imported or moved.
 
 ```tsx
 interface UserCardProps {

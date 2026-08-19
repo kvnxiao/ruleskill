@@ -7,7 +7,7 @@ description: "Rust error handling; anyhow for apps versus thiserror for librarie
 
 ## `anyhow` for applications, `thiserror` for libraries (Default)
 
-Base the default error style on whether the caller branches on the failure.
+The default error style depends on whether the caller branches on the failure.
 
 - **Applications** that propagate failures toward a human default to `anyhow`, `?`, and `.context()` breadcrumbs.
 - **Libraries** whose callers react differently to distinct failures default to an owned error type, usually derived with `thiserror`.
@@ -92,7 +92,7 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 ## Add context: eager vs lazy (Default)
 
-`.context(v)` evaluates its argument eagerly, on every call including the success path. `.with_context(|| ...)` defers it to the moment an error actually occurs. Let the cost of building the message decide.
+`.context(v)` evaluates its argument eagerly, on every call including the success path. `.with_context(|| ...)` defers it until an error occurs. The message construction cost determines the choice.
 
 ```rust
 use anyhow::{Context, Result};
