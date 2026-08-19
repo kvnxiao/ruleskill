@@ -16,5 +16,28 @@ pub(crate) fn render_template(
         .render(context)
         .with_context(|| format!("failed to render template {name}"))?;
 
-    Ok(rendered)
+    Ok(rendered.replace("\r\n", "\n"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_template;
+    use serde::Serialize;
+
+    #[derive(Serialize)]
+    struct Context {
+        value: &'static str,
+    }
+
+    #[test]
+    fn render_template_normalizes_newlines() {
+        let rendered = render_template(
+            "test",
+            "first\r\n{{ value }}\r\nthird",
+            &Context { value: "second" },
+        )
+        .expect("template should render");
+
+        assert_eq!(rendered, "first\nsecond\nthird");
+    }
 }
