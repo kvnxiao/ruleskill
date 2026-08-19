@@ -7,7 +7,7 @@ description: "Rustdoc requirements; public-API and module docs, the module skele
 
 ## Public API Documentation (Default)
 
-Default public library items to useful documentation that states the purpose and any invariants, failure paths, panics, or side effects the signature cannot express. Add examples when usage is not apparent from the type and name; omit redundant `# Arguments` sections and fixed paragraph structures.
+Default public library items to useful documentation that states the purpose and any invariants, failure paths, panics, or side effects the signature cannot express. Examples are appropriate when usage is not apparent from the type and name; redundant `# Arguments` sections and fixed paragraph structures are omitted.
 
 ```rust
 /// Normalize an account name for storage.
@@ -22,7 +22,7 @@ pub fn normalize_name(input: &str) -> Result<AccountName, NameError> {
 
 ## Module Documentation (Default)
 
-Default public modules to a concise model and primary entry points. Add an example when it clarifies how the items compose.
+Default public modules to a concise model and primary entry points. An example is appropriate when it clarifies how the items compose.
 
 ```rust
 //! Load and validate application configuration.
@@ -66,11 +66,11 @@ When a public module introduces a substantial concept or several related types, 
 
 ## Crate Root as Cookbook and Spec (Conditional)
 
-For a published library, use the crate root to:
+For a published library, the crate root:
 
-- List what the crate supports and what it does **not**, linking each unsupported feature to a tracking issue.
-- State the panic policy ("APIs that panic by design are few and clearly documented as such").
-- Embed a short cookbook of runnable, task-oriented examples.
+- Lists what the crate supports and does not support, with each unsupported feature linked to a tracking issue.
+- States the panic policy ("APIs that panic by design are few and clearly documented as such").
+- Includes a short cookbook of runnable, task-oriented examples.
 
 ## Long-Form Rationale via `include_str!` (Conditional)
 

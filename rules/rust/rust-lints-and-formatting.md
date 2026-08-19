@@ -68,7 +68,7 @@ Default strict lint enforcement to CI. A new compiler or Clippy lint then fails 
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 ```
 
-Do **not** put `#![deny(warnings)]` in source: a future toolchain that adds a lint would break consumers building your crate through no fault of theirs.
+Keep `#![deny(warnings)]` out of source because a future toolchain that adds a lint would break consumers building the crate.
 
 ## Commit a minimal `rustfmt.toml` (Default)
 
