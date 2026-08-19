@@ -1,16 +1,20 @@
 ---
 paths: **/*.{rs,toml}
-description: "Rust performance; Cow, capacity pre-allocation, FxHash, arena indices, compact collections, byte-string IO, and Cargo build profiles."
+description: "Rust performance guidance activated by profiling; borrowing, allocation capacity, hashing, arenas, compact collections, byte-oriented IO, and measured build profiles."
 ---
 
 # Performance Considerations
 
-## Use `Cow` for Conditional Cloning
+The default representation is a readable standard-library type. Profiling or benchmarks activate specialized data structures, storage formats, and build profiles.
+
+## Use `Cow` for conditional cloning (Conditional)
+
+When profiling identifies cloning as material and most inputs can remain borrowed, return `Cow`. Keep an owned return type when the lifetime parameter and two representations would complicate the API without a meaningful gain.
 
 ```rust
 use std::borrow::Cow;
 
-fn process(input: &str) -> Cow<str> {
+fn process(input: &str) -> Cow<'_, str> {
     if input.contains("special") {
         Cow::Owned(input.replace("special", "SPECIAL"))
     } else {
@@ -19,107 +23,102 @@ fn process(input: &str) -> Cow<str> {
 }
 ```
 
-## Allocations and Capacity
+## Allocations and capacity (Default)
+
+When the output size is known or has a reliable upper bound, reserve that capacity before repeated insertion.
 
 ```rust
-// Bad: reallocates repeatedly.
-let mut vec = Vec::new();
-for i in 0..1000 {
-    vec.push(i);
-}
-
-// Good: pre-allocate known capacity.
-let mut vec = Vec::with_capacity(1000);
-for i in 0..1000 {
-    vec.push(i);
+let mut values = Vec::with_capacity(1000);
+for value in 0..1000 {
+    values.push(value);
 }
 ```
 
-## Avoid Unnecessary Copies
+## Avoid unnecessary copies (Default)
+
+Borrow a collection when it remains in use, and consume it with `into_iter()` when ownership can move to the loop.
 
 ```rust
-// Borrow items during iteration.
-for item in &collection {  // Borrow the collection; do not consume it.
+for item in &collection {
     process(item);
 }
 
-// Consume the collection with drain().
-for item in collection.drain(..) {
+for item in collection.into_iter() {
     consume(item);
 }
 ```
 
-## Fast hashing for internal maps
+Use `drain(..)` when the empty allocation will be reused or when only a subrange must be removed. Do not use a full-range drain merely to consume a collection; `clippy::iter_with_drain` identifies that case.
 
-The std `HashMap` uses SipHash for HashDoS resistance. That protection only matters for maps keyed by untrusted input. For internal maps, `FxHash` is much faster.
+## Fast hashing for internal maps (Conditional)
+
+When profiling identifies hashing in a trusted internal map as a hot path, benchmark a faster hasher such as `FxHash`. Maps keyed by untrusted input must retain a HashDoS-resistant hasher.
 
 ```rust
 use rustc_hash::FxHasher;
 use std::{collections::HashMap, hash::BuildHasherDefault};
 
-// Use FxHashMap for internal maps and std HashMap for attacker-facing maps.
 type FxHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 ```
 
-## Arena indices instead of pointer graphs
+## Arena indices instead of pointer graphs (Conditional)
+
+When allocation and pointer traversal dominate a graph workload, benchmark copyable indices into a flat arena against the standard pointer representation.
 
 ```rust
-// Bad: `Rc<RefCell<Node>>` allocates per node and checks borrows at runtime.
-
-// Good: use Copy indices into a flat arena. NonZeroU32 gives `Option<NodeId>`
-// the same size as `NodeId` via the 0 niche.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NodeId(std::num::NonZeroU32);
 
 let nodes: IndexVec<NodeId, Node> = IndexVec::new();
 ```
 
-## Compact collections on hot paths
+## Compact collections on hot paths (Conditional)
+
+When measurements show that allocation count or representation size matters, benchmark inline strings and small-vector representations using observed size distributions.
 
 ```rust
-// Store small strings inline without heap allocation up to ~24 bytes.
 pub struct Name(compact_str::CompactString);
 
-// Use ThinVec for common short lists.
-use thin_vec::ThinVec;
+type Children<T> = thin_vec::ThinVec<T>;
 
-// Store up to N elements inline before spilling to the heap.
-// Most lines have zero or one assertion, so optimize for a single element.
 type Assertions = smallvec::SmallVec<[Assertion; 1]>;
 ```
 
-## Shrink before caching; box immutable payloads
+## Shrink before caching and box immutable payloads (Conditional)
 
-`collect`, `extend`, reservation, and `remove` can leave a collection over-allocated. Drop the spare capacity before storing it in a long-lived cache.
+When a long-lived cache has measured memory pressure, remove spare collection capacity before insertion or store immutable payloads as boxed slices and strings.
 
 ```rust
 vec.shrink_to_fit();
 
-// Box immutable payloads as slices or str values; they have no capacity field
-// and cannot grow.
 let payload: Box<[u8]> = data.into_boxed_slice();
-let name: Box<str> = s.into_boxed_str();
+let name: Box<str> = value.into_boxed_str();
 ```
 
-## Byte strings for hot IO
+## Byte strings for hot IO (Conditional)
 
-On hot IO paths, work in bytes (`&[u8]`, `bstr`) and defer UTF-8 validation until you actually need text. Name your buffer capacities.
+When profiling identifies UTF-8 validation or text conversion on a hot IO path, operate on `&[u8]` or `bstr` values and validate only at text boundaries. Name buffer capacities so benchmarks can vary them deliberately.
 
 ```rust
 use bstr::ByteSlice;
 
-const DEFAULT_BUFFER_CAPACITY: usize = 64 * (1 << 10); // 64 KB
+const DEFAULT_BUFFER_CAPACITY: usize = 64 * (1 << 10);
 ```
 
-## Cargo build profiles
+## Release debug information (Default)
+
+Preserve line-table debug information in release builds for profilers and backtraces unless artifact size measurements require stripping it.
 
 ```toml
-# Preserve line-table debug info in release builds for profilers and
-# backtraces; the speed cost is negligible.
 [profile.release]
 debug = 1
+```
 
-# Use a max-optimization profile for shipping binaries.
+## Specialized build profiles (Conditional)
+
+When benchmarks justify longer builds or different runtime semantics, add LTO, per-package codegen settings, profiling profiles, or custom release profiles. Compare the produced binary on representative workloads before retaining the configuration.
+
+```toml
 [profile.release-lto]
 inherits = "release"
 lto = "fat"
@@ -129,14 +128,14 @@ strip = "symbols"
 debug-assertions = false
 overflow-checks = false
 
-# Limit extra compile time to crates that dominate runtime.
 [profile.release.package.parser]
 codegen-units = 1
 
-# Keep release speed, symbols, and full debug info for profiling.
 [profile.profiling]
 inherits = "release"
 debug = "full"
 strip = false
 lto = false
 ```
+
+With `overflow-checks = false`, integer overflow wraps with two's-complement semantics. It is not undefined behavior, but code that requires overflow rejection must use checked arithmetic instead of relying on the profile.
