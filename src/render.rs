@@ -16,9 +16,18 @@ pub(crate) fn render_template(
         .render(context)
         .with_context(|| format!("failed to render template {name}"))?;
 
-    Ok(rendered)
+    Ok(rendered.replace("\r\n", "\n"))
 }
 
-pub(crate) fn generated_reference(source: &str) -> String {
-    source.to_owned()
+#[cfg(test)]
+mod tests {
+    use super::render_template;
+
+    #[test]
+    fn render_template_normalizes_newlines() {
+        let rendered = render_template("test", "first\r\nsecond\r\nthird", &())
+            .expect("template should render");
+
+        assert_eq!(rendered, "first\nsecond\nthird");
+    }
 }

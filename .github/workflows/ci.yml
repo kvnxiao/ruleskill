@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Rust toolchains
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup toolchain install nightly --profile minimal --component rustfmt
+      - name: Check formatting
+        run: cargo +nightly fmt --all --check
+      - name: Run Clippy
+        run: cargo +stable clippy --all-targets --all-features --locked -- -D warnings
+      - name: Check generated skills
+        shell: bash
+        run: |
+          cargo +stable build --locked
+          generated_dir=$(mktemp -d)
+          (cd "$generated_dir"; "$GITHUB_WORKSPACE/target/debug/ruleskill" install --all --target all --prune)
+          git diff --no-index --exit-code -- "$generated_dir/.agents" .agents
+          git diff --no-index --exit-code -- "$generated_dir/.claude" .claude
+          git diff --no-index --exit-code -- "$generated_dir/.ruleskill-prune.toml" .ruleskill-prune.toml
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal
+      - name: Run tests
+        run: cargo +stable test --locked
+
+  msrv:
+    name: MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read MSRV
+        id: msrv
+        shell: bash
+        run: |
+          msrv=$(cargo metadata --format-version 1 --no-deps | jq -er '.packages[] | select(.name == "ruleskill") | .rust_version')
+          printf 'version=%s\n' "$msrv" >> "$GITHUB_OUTPUT"
+      - name: Install MSRV
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: rustup toolchain install "$MSRV" --profile minimal
+      - name: Check MSRV
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo +"$MSRV" check --all-targets --all-features --locked
+
+  dependencies:
+    name: Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command-arguments: advisories bans sources

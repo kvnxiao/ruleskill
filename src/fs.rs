@@ -1,7 +1,6 @@
-use std::fs;
-
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Result, anyhow};
 use camino::{Utf8Path, Utf8PathBuf};
+use fs_err as fs;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WriteMode {
@@ -19,14 +18,12 @@ pub(crate) fn write_generated(
     path: &Utf8Path,
     content: &str,
     mode: WriteMode,
-    _force: bool,
 ) -> Result<WriteReport> {
     if mode == WriteMode::Write {
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("failed to create directory {parent}"))?;
+            fs::create_dir_all(parent)?;
         }
-        fs::write(path, content).with_context(|| format!("failed to write {path}"))?;
+        fs::write(path, content)?;
     }
 
     Ok(WriteReport {
@@ -60,7 +57,7 @@ pub(crate) fn remove_generated(path: &Utf8Path, mode: WriteMode) -> Result<Optio
         } else {
             fs::remove_file(path)
         };
-        outcome.with_context(|| format!("failed to remove {path}"))?;
+        outcome?;
     }
 
     Ok(Some(RemoveReport {
@@ -81,8 +78,8 @@ pub(crate) fn prune_empty_dir(
         return Ok(None);
     }
 
-    for entry in fs::read_dir(path).with_context(|| format!("failed to read {path}"))? {
-        let entry = entry.with_context(|| format!("failed to read {path}"))?;
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
         let entry_path = Utf8PathBuf::from_path_buf(entry.path())
             .map_err(|entry| anyhow!("path is not valid UTF-8: {}", entry.display()))?;
         if !ignoring.contains(&entry_path) {
@@ -91,7 +88,7 @@ pub(crate) fn prune_empty_dir(
     }
 
     if mode == WriteMode::Write {
-        fs::remove_dir(path).with_context(|| format!("failed to remove {path}"))?;
+        fs::remove_dir(path)?;
     }
 
     Ok(Some(RemoveReport {

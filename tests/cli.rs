@@ -1,10 +1,10 @@
-use std::fs;
 use std::path::Path;
 use std::process::Command;
 
 use assert_cmd::prelude::*;
-use assert_fs::TempDir;
+use fs_err as fs;
 use predicates::prelude::*;
+use tempfile::TempDir;
 
 #[test]
 fn list_discovers_seeded_skills() {
@@ -262,6 +262,98 @@ fn install_github_actions_to_all_writes_both_harness_outputs() {
 }
 
 #[test]
+fn install_all_writes_every_catalog_pack_to_both_harnesses() {
+    let catalog = minimal_catalog();
+    for pack in ["alpha", "beta"] {
+        seed_pack(&catalog, pack);
+        write(
+            catalog.path().join(format!("rules/{pack}/example.md")),
+            "# Example\n",
+        );
+    }
+
+    let repo = TempDir::new().unwrap();
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(["install", "--all", "--target", "all"])
+        .assert()
+        .success();
+
+    for harness in [".agents", ".claude"] {
+        for pack in ["alpha", "beta"] {
+            assert!(
+                repo.path()
+                    .join(harness)
+                    .join(format!("skills/{pack}-rules/SKILL.md"))
+                    .is_file()
+            );
+        }
+    }
+}
+
+#[test]
+fn install_all_with_prune_removes_only_obsolete_rule_outputs() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "current");
+    write(
+        catalog.path().join("rules/current/example.md"),
+        "# Example\n",
+    );
+
+    let repo = TempDir::new().unwrap();
+    let obsolete_paths = [
+        repo.path().join(".agents/skills/obsolete-rules/SKILL.md"),
+        repo.path().join(".claude/skills/obsolete-rules/SKILL.md"),
+        repo.path().join(".claude/rules/obsolete-rules.md"),
+    ];
+    for path in &obsolete_paths {
+        write(path, "obsolete\n");
+    }
+    let unrelated_skill = repo.path().join(".agents/skills/external-rules/SKILL.md");
+    let unrelated_rule = repo.path().join(".claude/rules/external-rules.md");
+    write(&unrelated_skill, "external\n");
+    write(&unrelated_rule, "external\n");
+    write(
+        repo.path().join(".ruleskill-prune.toml"),
+        "codex = [\"obsolete-rules\"]\nclaude = [\"obsolete-rules\"]\n",
+    );
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args([
+            "install",
+            "--all",
+            "--target",
+            "all",
+            "--prune",
+            "--dry-run",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("would remove"));
+    for path in &obsolete_paths {
+        assert!(path.exists());
+    }
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(["install", "--all", "--target", "all", "--prune"])
+        .assert()
+        .success();
+
+    for path in obsolete_paths {
+        assert!(!path.exists());
+    }
+    assert_file_equals(unrelated_skill, "external\n");
+    assert_file_equals(unrelated_rule, "external\n");
+    assert_file_contains(repo.path().join(".ruleskill-prune.toml"), "current-rules");
+    assert_file_does_not_contain(repo.path().join(".ruleskill-prune.toml"), "obsolete-rules");
+}
+
+#[test]
 fn auto_detection_installs_every_detected_harness() {
     let repo = TempDir::new().unwrap();
     fs::create_dir_all(repo.path().join(".agents")).unwrap();
@@ -273,14 +365,16 @@ fn auto_detection_installs_every_detected_harness() {
         .assert()
         .success();
 
-    assert!(repo
-        .path()
-        .join(".agents/skills/github-actions-rules/SKILL.md")
-        .is_file());
-    assert!(repo
-        .path()
-        .join(".claude/skills/github-actions-rules/SKILL.md")
-        .is_file());
+    assert!(
+        repo.path()
+            .join(".agents/skills/github-actions-rules/SKILL.md")
+            .is_file()
+    );
+    assert!(
+        repo.path()
+            .join(".claude/skills/github-actions-rules/SKILL.md")
+            .is_file()
+    );
 }
 
 #[test]
@@ -310,6 +404,39 @@ fn existing_destinations_are_overwritten_without_force() {
 
     assert_file_contains(&destination, "name: rust-rules");
     assert_file_does_not_contain(&destination, "manual skill");
+}
+
+#[test]
+fn reinstall_removes_stale_skill_files() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "replaceable");
+    write(
+        catalog.path().join("rules/replaceable/example.md"),
+        "# Example\n",
+    );
+
+    let repo = TempDir::new().unwrap();
+    let args = ["install", "replaceable", "--target", "codex"];
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(args)
+        .assert()
+        .success();
+
+    let stale = repo
+        .path()
+        .join(".agents/skills/replaceable-rules/references/stale.md");
+    write(&stale, "stale\n");
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(args)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("removed"));
+
+    assert!(!stale.exists());
 }
 
 #[test]
@@ -416,10 +543,11 @@ fn packs_without_paths_produce_no_rule_file() {
         .assert()
         .success();
 
-    assert!(repo
-        .path()
-        .join(".claude/skills/without-paths-rules/SKILL.md")
-        .is_file());
+    assert!(
+        repo.path()
+            .join(".claude/skills/without-paths-rules/SKILL.md")
+            .is_file()
+    );
     assert!(!repo.path().join(".claude/rules").exists());
 }
 
@@ -642,6 +770,42 @@ fn install_unknown_skill_without_close_match() {
 }
 
 #[test]
+fn install_rejects_a_pack_together_with_all() {
+    cmd()
+        .args(["install", "rust", "--all"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("cannot be used with"));
+}
+
+#[test]
+fn install_prune_requires_all() {
+    cmd()
+        .args(["install", "--prune"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("--all"));
+}
+
+#[test]
+fn install_prune_rejects_invalid_recorded_output_names() {
+    let repo = TempDir::new().unwrap();
+    write(
+        repo.path().join(".ruleskill-prune.toml"),
+        "codex = [\"../outside-rules\"]\n",
+    );
+
+    cmd()
+        .current_dir(repo.path())
+        .args(["install", "--all", "--target", "codex", "--prune"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "prune state contains invalid output name",
+        ));
+}
+
+#[test]
 fn uninstall_removes_claude_skill_and_rule_file() {
     let repo = TempDir::new().unwrap();
 
@@ -706,10 +870,11 @@ fn uninstall_leaves_other_packs_installed() {
         .stdout(predicate::str::contains("pruned").not());
 
     assert!(!repo.path().join(".agents/skills/rust-rules").exists());
-    assert!(repo
-        .path()
-        .join(".agents/skills/github-actions-rules/SKILL.md")
-        .is_file());
+    assert!(
+        repo.path()
+            .join(".agents/skills/github-actions-rules/SKILL.md")
+            .is_file()
+    );
 }
 
 #[test]
@@ -752,10 +917,11 @@ fn uninstall_dry_run_reports_paths_without_removing() {
         .stdout(predicate::str::contains("would remove"))
         .stdout(predicate::str::contains("would prune"));
 
-    assert!(repo
-        .path()
-        .join(".agents/skills/rust-rules/SKILL.md")
-        .is_file());
+    assert!(
+        repo.path()
+            .join(".agents/skills/rust-rules/SKILL.md")
+            .is_file()
+    );
 }
 
 #[test]
@@ -931,5 +1097,5 @@ fn assert_file_starts_with(path: impl AsRef<Path>, expected: &str) {
 }
 
 fn reference_count(path: impl AsRef<Path>) -> usize {
-    fs::read_dir(path).unwrap().count()
+    fs::read_dir(path.as_ref()).unwrap().count()
 }
