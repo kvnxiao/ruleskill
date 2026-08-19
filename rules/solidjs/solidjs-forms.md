@@ -5,14 +5,13 @@ description: "TanStack Form rules for SolidJS; headless form modules owning form
 
 # Forms
 
-`@tanstack/solid-form` is the form library. Keep field values, touched/dirty flags, and error display in the component's form instance. Keep validation semantics, default values, and submission behavior in headless domain code.
+Use `@tanstack/solid-form` when validation, submission state, field arrays, or cross-field workflows are substantial. Keep simple forms local when native controls and a small submit handler express the full behavior.
 
-## Form Modules Own Options, Schema, and Submission
+## Form Modules Own Options, Schema, and Submission (Default)
 
-Each form gets a module that exports the validation schema, shared `formOptions`, and a submit function that delegates to domain actions or mutations. These exports are testable as plain TypeScript without rendering anything.
+When a form has a shared schema, reusable options, or a multi-step submission workflow, extract a module that exports those contracts and delegates submission to domain actions or mutations. Keep view-specific defaults and a short submit handler in the component when extraction would only move code.
 
 ```ts
-// Domain module: src/state/checkout-form.ts
 import { formOptions } from "@tanstack/solid-form";
 import * as v from "valibot";
 
@@ -35,7 +34,7 @@ export async function submitCheckout(value: CheckoutInput) {
 
 Validation uses a Standard Schema library (valibot, zod, arktype) passed to `validators` — business rules live in the schema, not scattered across inline JSX validator closures. Inline field validators are for UI-scoped concerns (for example an `onChangeAsync` availability check, whose function should itself be imported from the module).
 
-## Components Render Fields
+## Components Render Fields (Required)
 
 The component spreads the module's options into `createForm`; Solid adapter options are function-wrapped, and the component decides only how fields look. `field` is an accessor: use `field().state.value` and `field().handleChange(…)`. Omitting the `field()` call reads the accessor object instead of its value.
 
@@ -81,10 +80,10 @@ const CheckoutForm: Component = () => {
 };
 ```
 
-## Subscribe Narrowly
+## Subscribe Narrowly (Default)
 
-Read derived form state (`canSubmit`, `isSubmitting`) through `form.Subscribe` with a `selector` rather than subscribing to whole form state; the selected value arrives as an accessor. Array fields use `<form.Field name="items" mode="array">` with `pushValue`/`removeValue`/`swapValues` on the field.
+Default derived form state such as `canSubmit` and `isSubmitting` to a narrow `form.Subscribe` selector. Subscribe to the full state only when the view consumes most of it. Array fields use `<form.Field name="items" mode="array">` with `pushValue`, `removeValue`, and `swapValues` on the field.
 
-## Draft State Stays in the Form
+## Draft State Stays in the Form (Default)
 
-Keep in-progress values in the form instance; do not mirror drafts into signals or stores. Submit values through the module's submit function, which is the only path for form data to reach business state or the server (typically through a mutation; see the data fetching rules).
+Default in-progress values to the form instance. Mirror a draft only when it must survive form disposal, synchronize with another view, or become an offline snapshot. Route substantial submissions through the form module; a simple local form can submit directly to its domain action.

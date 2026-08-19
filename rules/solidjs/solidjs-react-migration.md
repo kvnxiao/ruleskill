@@ -48,6 +48,6 @@ Solid's JSX looks like React, but its execution model differs: components run on
 | Reading `props.children` repeatedly or inspecting it as data | Resolve once with the `children()` helper |
 | Expecting remount when a value changes | Non-keyed `<Show>` preserves the branch; use `keyed` for remount-on-identity-change |
 
-## Guardrails
+## Guardrails (Default)
 
-Enable `eslint-plugin-solid`; its `reactivity` rule statically catches untracked reads, destructured props, and misused async, and `no-destructure`, `prefer-for`, `components-return-once`, `no-react-deps`, and `no-react-specific-props` cover the rest of this table.
+Default migrations to `eslint-plugin-solid`. Its `reactivity`, `no-destructure`, `prefer-for`, `components-return-once`, `no-react-deps`, and `no-react-specific-props` rules catch the incompatible React patterns in this table. Keep an existing lint stack when it enforces equivalent checks.

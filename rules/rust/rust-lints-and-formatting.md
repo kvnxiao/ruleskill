@@ -5,23 +5,22 @@ description: "Clippy and rustfmt config; pedantic with justified allows, promote
 
 # Lints and Formatting
 
-## Enable `pedantic` group-wide, then allow back with a reason
+## Enable `pedantic` group-wide, then allow back with a reason (Default)
 
-Turn on the whole `clippy::pedantic` group at a low priority, then `allow` the handful you reject — each with a one-line reason. `priority = -2` makes the group lose to individual lint lines, so your overrides win regardless of order.
+Default the full `clippy::pedantic` group to a low-priority warning, then allow rejected lints with one-line reasons. A project with a fixed lint baseline can select individual pedantic lints instead. `priority = -2` makes individual lint settings override the group regardless of order.
 
 ```toml
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -2 }
 
-# Allow only pedantic lints with a documented reason.
 match_same_arms = "allow"
 module_name_repetitions = "allow"
 needless_continue = "allow" # an explicit continue can read better than an empty else
 ```
 
-## Promote restriction lints to warnings
+## Promote restriction lints to warnings (Default)
 
-Several `clippy::restriction` lints catch real mistakes in library and tool code. Promote them:
+For library and tool projects, default the following `clippy::restriction` lints to warnings. Omit a lint when its prohibited operation is part of the project contract.
 
 ```toml
 print_stdout = "warn"
@@ -30,17 +29,16 @@ dbg_macro = "warn"
 exit = "warn"
 get_unwrap = "warn"
 rc_mutex = "warn"
-iter_over_hash_type = "warn" # forces deterministic iteration order
+iter_over_hash_type = "warn"
 ```
 
-`iter_over_hash_type` forces deterministic iteration order: iterating a `HashMap` in hash order is a nondeterminism bug waiting to happen.
+`iter_over_hash_type` flags iteration whose result can depend on randomized hash order.
 
-## Configure risky std calls in `clippy.toml`
+## Configure risky std calls in `clippy.toml` (Default)
 
-Use per-entry `reason` values in `disallowed-methods` to require an injectable abstraction for `std::fs`/`std::env` calls, which lets tests provide a fake filesystem. The reason appears in the lint message. Use `doc-valid-idents` to exempt domain words from `doc_markdown`.
+For projects that require injectable environment and filesystem access, disallow direct `std::env` and `std::fs` calls with per-entry reasons. The reason appears in the lint message. Use `doc-valid-idents` to exempt domain words from `doc_markdown`.
 
 ```toml
-# clippy.toml
 disallowed-methods = [
     { path = "std::env::var", reason = "use System::env_var so tests can inject env" },
     { path = "std::fs::read_to_string", reason = "use System::read_to_string" },
@@ -49,9 +47,9 @@ disallowed-methods = [
 doc-valid-idents = ["NumPy", "PyCharm", "SQLAlchemy"]
 ```
 
-## Justify every `allow`
+## Justify every `allow` (Default)
 
-Group `#![allow(...)]` by reason and annotate each entry. Prefer `#[expect(...)]` over `#[allow(...)]` where the toolchain supports it — an `expect` that stops firing is itself a warning, so stale suppressions produce a warning.
+Default lint suppressions to groups organized by reason, with each entry justified. Prefer `#[expect(...)]` where the supported toolchain provides it; when the lint stops firing, the stale expectation emits a warning.
 
 ```rust
 #![allow(
@@ -62,24 +60,21 @@ Group `#![allow(...)]` by reason and annotate each entry. Prefer `#[expect(...)]
 )]
 ```
 
-## Keep `-D warnings` in CI, not in source
+## Keep `-D warnings` in CI, not in source (Default)
 
-Enforce strict linting in CI so a new compiler or Clippy lint fails *your* build, not every downstream user who compiles your published crate.
+Default strict lint enforcement to CI. A new compiler or Clippy lint then fails the project build without imposing source-level warning policy on downstream users.
 
 ```sh
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 ```
 
-Do **not** put `#![deny(warnings)]` in source: a future toolchain that adds a lint would break consumers building your crate through no fault of theirs.
+Keep `#![deny(warnings)]` out of source because a future toolchain that adds a lint would break consumers building the crate.
 
-## Commit a minimal `rustfmt.toml`
+## Commit a minimal `rustfmt.toml` (Default)
 
-Pin the formatting so it doesn't drift across contributors and toolchains. Bump `edition`/`style_edition` alongside the crate edition.
+Default the repository to a minimal `rustfmt.toml` that pins formatting across contributors and toolchains. Update `edition` and `style_edition` with the crate edition.
 
 ```toml
 edition = "2024"
 style_edition = "2024"
-# Optional width settings:
-# max_width = 79
-# use_small_heuristics = "max"
 ```
