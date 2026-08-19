@@ -1,8 +1,23 @@
 [package]
 name = "ruleskill"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 rust-version = "1.95"
+description = "Install agent skills generated from Markdown rule packs"
+license = "MIT"
+repository = "https://github.com/kvnxiao/ruleskill"
+include = [
+    "src/**",
+    "tests/**",
+    "rules/**",
+    "templates/**",
+    "LICENSE",
+    "README.md",
+]
+
+[lints.rust]
+rust_2018_idioms = { level = "warn", priority = -1 }
+unsafe_code = "forbid"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -2 }
@@ -15,17 +30,19 @@ rc_mutex = "warn"
 iter_over_hash_type = "warn"
 
 [dependencies]
-anyhow = "1.0.103"
-camino = "1.2.2"
-clap = { version = "4.6.1", features = ["derive"] }
-minijinja = "2.21.0"
-serde = { version = "1.0.228", features = ["derive"] }
-strsim = "0.11"
-toml = "1.1.2"
-walkdir = "2.5.0"
+anyhow = "1.0.104"
+camino = "1.2.5"
+clap = { version = "4.6.6", features = ["derive"] }
+fs-err = "3.3.1"
+minijinja = { version = "2.24.0", default-features = false, features = ["debug", "serde"] }
+serde = { version = "1.0.229", features = ["derive"] }
+strsim = "0.11.1"
+toml = { version = "1.1.4", default-features = false, features = ["parse", "serde"] }
 
 [dev-dependencies]
 assert_cmd = "2.2.2"
-assert_fs = "1.1.4"
-predicates = "3.1.4"
-insta = "1.48.0"
+predicates = { version = "3.1.4", default-features = false }
+tempfile = "3.27.0"
+
+[profile.release]
+debug = 1

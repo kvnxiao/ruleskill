@@ -18,7 +18,3 @@ pub(crate) fn render_template(
 
     Ok(rendered)
 }
-
-pub(crate) fn generated_reference(source: &str) -> String {
-    source.to_owned()
-}

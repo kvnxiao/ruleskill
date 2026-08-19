@@ -6,7 +6,11 @@ Use it to keep reusable engineering rules in one catalog, then render them into 
 
 ## Usage
 
-Install `ruleskill` using `cargo install --path .`.
+Install `ruleskill` from this checkout:
+
+```sh
+just install
+```
 
 List available skills:
 
@@ -26,9 +30,11 @@ Install a skill (harness target is auto-detected, unless `--target` is specified
 ruleskill install rust # auto-detect harness target
 ruleskill install github-actions --target claude # specify harness target
 ruleskill install rust --target all # install for all supported harness targets
+ruleskill install --all --target all # install every catalog pack for every target
+ruleskill install --all --target all --prune # also remove obsolete rule-pack outputs
 ```
 
-Use `--dry-run` to preview writes. `--force` is accepted for compatibility and currently does not change overwrite behavior.
+Use `--dry-run` to preview writes and removals. Installs replace the generated skill folder, so stale references are removed. `--force` is accepted for compatibility and currently does not change replacement behavior.
 
 Uninstall a skill (removes the generated skill folder, plus the `.claude/rules/` pointer for the Claude target):
 
@@ -38,20 +44,25 @@ ruleskill uninstall rust --target claude --dry-run # preview the removals
 ruleskill uninstall --all # remove every rule pack in the catalog
 ```
 
-`--all` covers the packs in the catalog, so it never deletes a skill that `ruleskill` did not install. The trade-off: if you drop a rule pack from the catalog, its installed output stays behind and you delete that by hand. Uninstall prunes `skills/` and `rules/` once they are empty, but keeps `.claude/` and `.agents/` so harness auto-detection and your other settings survive.
+`ruleskill uninstall --all` covers the packs in the catalog, so it never deletes a skill that `ruleskill` did not install. If you drop a rule pack from the catalog, remove its output by hand or run `install --all --prune`. Uninstall prunes `skills/` and `rules/` once they are empty, but keeps `.claude/` and `.agents/` so harness auto-detection and your other settings survive.
+
+With `install --all`, `--prune` removes only outputs recorded by an earlier pruned install and now absent from the catalog. `.ruleskill-prune.toml` records owned outputs separately for Codex and Claude, so other skills and rule pointers remain untouched.
 
 ## Development
 
-Useful checks:
+`Cargo.toml`'s `package.rust-version` field declares the minimum supported Rust version, and CI reads the value from package metadata.
+
+Run the complete check suite or a narrow check:
 
 ```sh
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test
-cargo run -- validate
+just check
+just lint
+just test
 ```
 
-Run `cargo fmt` before re-checking formatting.
+Run `just fmt` to format the workspace with nightly rustfmt. Run `just --list` to see every repository task.
+
+`Cargo.lock` is committed. Dependabot proposes weekly Cargo and GitHub Actions updates, and CI audits dependency advisories, bans, and sources with `cargo-deny`.
 
 ## Adding Rules
 
@@ -77,8 +88,8 @@ The optional `paths` field is a comma-separated list of glob patterns. For the C
 
 Keep referenced files inside the skill folder. Avoid duplicate Markdown basenames within a single skill because generated references are flattened by filename.
 
-After editing `rules/` or `templates/`, run:
+After editing `rules/` or `templates/`, replace both checked-in harness outputs:
 
 ```sh
-ruleskill validate
+just reeject
 ```

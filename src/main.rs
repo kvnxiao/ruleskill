@@ -5,18 +5,81 @@ mod render;
 
 use std::collections::BTreeSet;
 use std::env;
-use std::fs as std_fs;
 use std::io::{self, Write};
 use std::process::ExitCode;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Parser, Subcommand};
+use fs_err as fs_io;
+use serde::Deserialize;
 
-use crate::catalog::{Catalog, Skill, RULE_TEMPLATE, SKILL_TEMPLATE};
-use crate::detect::{resolve_target, Target};
-use crate::fs::{prune_empty_dir, remove_generated, write_generated, RemoveKind, WriteMode};
-use crate::render::{generated_reference, render_template};
+use crate::catalog::{Catalog, RULE_TEMPLATE, SKILL_TEMPLATE, Skill, is_output_skill_name};
+use crate::detect::{Harness, Target, resolve_target};
+use crate::fs::{
+    RemoveKind, RemoveReport, WriteMode, prune_empty_dir, remove_generated, write_generated,
+};
+use crate::render::render_template;
+
+const PRUNE_STATE_FILE: &str = ".ruleskill-prune.toml";
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct PruneState {
+    codex: BTreeSet<String>,
+    claude: BTreeSet<String>,
+}
+
+impl PruneState {
+    fn load(repo_root: &Utf8Path) -> Result<Self> {
+        let path = repo_root.join(PRUNE_STATE_FILE);
+        let content = match fs_io::read_to_string(&path) {
+            Ok(content) => content,
+            Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(Self::default()),
+            Err(err) => return Err(err.into()),
+        };
+        let state = toml::from_str::<Self>(&content)
+            .with_context(|| format!("failed to parse prune state at {path}"))?;
+        for output_name in state.codex.iter().chain(&state.claude) {
+            if !is_output_skill_name(output_name) {
+                return Err(anyhow!(
+                    "prune state contains invalid output name '{output_name}': {path}"
+                ));
+            }
+        }
+        Ok(state)
+    }
+
+    fn outputs(&self, harness: Harness) -> &BTreeSet<String> {
+        match harness {
+            Harness::Codex => &self.codex,
+            Harness::Claude => &self.claude,
+        }
+    }
+
+    fn outputs_mut(&mut self, harness: Harness) -> &mut BTreeSet<String> {
+        match harness {
+            Harness::Codex => &mut self.codex,
+            Harness::Claude => &mut self.claude,
+        }
+    }
+
+    fn render(&self) -> String {
+        fn render_names(names: &BTreeSet<String>) -> String {
+            names
+                .iter()
+                .map(|name| format!("\"{name}\""))
+                .collect::<Vec<_>>()
+                .join(", ")
+        }
+
+        format!(
+            "codex = [{}]\nclaude = [{}]\n",
+            render_names(&self.codex),
+            render_names(&self.claude)
+        )
+    }
+}
 
 #[derive(Debug, Parser)]
 #[command(name = "ruleskill")]
@@ -38,7 +101,19 @@ enum Command {
         dry_run: bool,
         #[arg(
             long,
-            help = "Accepted for compatibility; installs overwrite by default"
+            conflicts_with = "skill_name",
+            help = "Install every rule pack in the catalog"
+        )]
+        all: bool,
+        #[arg(
+            long,
+            requires = "all",
+            help = "Remove previously recorded outputs absent from the catalog"
+        )]
+        prune: bool,
+        #[arg(
+            long,
+            help = "Accepted for compatibility; installs replace generated skill folders by default"
         )]
         force: bool,
     },
@@ -76,8 +151,10 @@ fn run() -> Result<()> {
             skill_name,
             target,
             dry_run,
-            force,
-        } => install(skill_name.as_deref(), target, dry_run, force),
+            all,
+            prune,
+            ..
+        } => install(skill_name.as_deref(), target, dry_run, all, prune),
         Command::Uninstall {
             skill_name,
             target,
@@ -109,22 +186,26 @@ fn validate() -> Result<()> {
     Ok(())
 }
 
-fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool) -> Result<()> {
+fn install(
+    skill_name: Option<&str>,
+    target: Target,
+    dry_run: bool,
+    all: bool,
+    prune: bool,
+) -> Result<()> {
     let catalog = Catalog::load_default()?;
-    let Some(skill_name) = skill_name else {
-        return Err(missing_skill_error(
-            &catalog,
-            "ruleskill install <SKILL_NAME>",
-        ));
+    let skills = if all {
+        catalog.validate()?;
+        catalog.skills()
+    } else {
+        let Some(skill_name) = skill_name else {
+            return Err(missing_skill_error(
+                &catalog,
+                "ruleskill install <SKILL_NAME> | ruleskill install --all",
+            ));
+        };
+        std::slice::from_ref(catalog.find_validated_skill(skill_name)?)
     };
-    let skill = catalog.find_validated_skill(skill_name)?;
-    let resolved = skill.resolve()?;
-    let skill_md = render_template(SKILL_TEMPLATE, catalog.template(), &resolved.render)?;
-    let rule_md = resolved
-        .rule_file
-        .as_ref()
-        .map(|rule_file| render_template(RULE_TEMPLATE, catalog.rule_template(), rule_file))
-        .transpose()?;
     let repo_root = current_dir_utf8()?;
     let harnesses = resolve_target(target, &repo_root)?;
     let mode = if dry_run {
@@ -134,12 +215,81 @@ fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool)
     };
     let mut stdout = io::stdout().lock();
 
-    for harness in harnesses {
-        let skill_dir = harness.skill_dir(&repo_root, &resolved.render.output_name);
+    let mut prune_plan = if prune {
+        Some((
+            skills
+                .iter()
+                .map(Skill::output_name)
+                .collect::<Result<BTreeSet<_>>>()?,
+            PruneState::load(&repo_root)?,
+        ))
+    } else {
+        None
+    };
+    if let Some((output_names, prune_state)) = &prune_plan {
+        for &harness in &harnesses {
+            prune_stale_generated(
+                &repo_root,
+                harness,
+                prune_state.outputs(harness),
+                output_names,
+                mode,
+                &mut stdout,
+            )?;
+        }
+    }
+
+    for skill in skills {
+        install_skill(&catalog, skill, &repo_root, &harnesses, mode, &mut stdout)?;
+    }
+
+    if let Some((output_names, prune_state)) = &mut prune_plan {
+        for &harness in &harnesses {
+            prune_state.outputs_mut(harness).clone_from(output_names);
+        }
+        let report = write_generated(
+            &repo_root.join(PRUNE_STATE_FILE),
+            &prune_state.render(),
+            mode,
+        )?;
+        print_report(&report, &mut stdout)?;
+    }
+
+    Ok(())
+}
+
+fn install_skill(
+    catalog: &Catalog,
+    skill: &Skill,
+    repo_root: &Utf8Path,
+    harnesses: &[Harness],
+    mode: WriteMode,
+    output: &mut impl Write,
+) -> Result<()> {
+    let resolved = skill.resolve()?;
+    let skill_md = render_template(SKILL_TEMPLATE, catalog.template(), &resolved.render)?;
+    let rule_md = resolved
+        .rule_file
+        .as_ref()
+        .map(|rule_file| render_template(RULE_TEMPLATE, catalog.rule_template(), rule_file))
+        .transpose()?;
+    let references = resolved
+        .references
+        .iter()
+        .map(|reference| {
+            Ok((
+                reference.reference_file.as_str(),
+                fs_io::read_to_string(&reference.source)?,
+            ))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    for &harness in harnesses {
+        let skill_dir = harness.skill_dir(repo_root, &resolved.render.output_name);
         writeln!(
-            stdout,
+            output,
             "{} {}",
-            if dry_run {
+            if mode == WriteMode::DryRun {
                 "would install"
             } else {
                 "installing"
@@ -148,44 +298,64 @@ fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool)
         )
         .context("failed to write command output")?;
 
-        let report = write_generated(&skill_dir.join("SKILL.md"), &skill_md, mode, force)?;
-        print_report(&report, &mut stdout)?;
+        if let Some(report) = remove_generated(&skill_dir, mode)? {
+            print_removal(&report, output)?;
+        }
+        let report = write_generated(&skill_dir.join("SKILL.md"), &skill_md, mode)?;
+        print_report(&report, output)?;
 
-        for reference in &resolved.references {
-            let source = std_fs::read_to_string(&reference.source)
-                .with_context(|| format!("failed to read {}", reference.source))?;
-            let content = generated_reference(&source);
+        for (reference_file, source) in &references {
             let report = write_generated(
-                &skill_dir.join("references").join(&reference.reference_file),
-                &content,
+                &skill_dir.join("references").join(reference_file),
+                source,
                 mode,
-                force,
             )?;
-            print_report(&report, &mut stdout)?;
+            print_report(&report, output)?;
         }
 
-        if let Some(path) = harness.rule_file(&repo_root, &resolved.render.output_name) {
+        if let Some(path) = harness.rule_file(repo_root, &resolved.render.output_name) {
             if let Some(content) = rule_md.as_deref() {
-                let report = write_generated(&path, content, mode, force)?;
-                print_report(&report, &mut stdout)?;
+                let report = write_generated(&path, content, mode)?;
+                print_report(&report, output)?;
             } else if path.is_dir() {
                 return Err(anyhow!(
                     "stale rule pointer path is a directory; remove or rename it before installing: {path}"
                 ));
             } else if let Some(report) = remove_generated(&path, mode)? {
-                print_removal(&report, &mut stdout)?;
-                if let Some(parent) = path.parent() {
-                    if let Some(report) =
+                print_removal(&report, output)?;
+                if let Some(parent) = path.parent()
+                    && let Some(report) =
                         prune_empty_dir(parent, std::slice::from_ref(&path), mode)?
-                    {
-                        print_removal(&report, &mut stdout)?;
-                    }
+                {
+                    print_removal(&report, output)?;
                 }
             }
         }
     }
 
     Ok(())
+}
+
+fn prune_stale_generated(
+    repo_root: &Utf8Path,
+    harness: Harness,
+    installed_outputs: &BTreeSet<String>,
+    output_names: &BTreeSet<String>,
+    mode: WriteMode,
+    output: &mut impl Write,
+) -> Result<()> {
+    let mut reports = Vec::new();
+    for output_name in installed_outputs.difference(output_names) {
+        let targets = [
+            Some(harness.skill_dir(repo_root, output_name)),
+            harness.rule_file(repo_root, output_name),
+        ];
+        for path in targets.into_iter().flatten() {
+            reports.extend(remove_generated(&path, mode)?);
+        }
+    }
+
+    print_removals_and_prune_parents(&reports, mode, output)
 }
 
 fn uninstall(skill_name: Option<&str>, target: Target, dry_run: bool, all: bool) -> Result<()> {
@@ -243,17 +413,32 @@ fn uninstall(skill_name: Option<&str>, target: Target, dry_run: bool, all: bool)
             harness.name()
         )
         .context("failed to write command output")?;
-        for report in &reports {
-            print_removal(report, &mut stdout)?;
-        }
+        print_removals_and_prune_parents(&reports, mode, &mut stdout)?;
+    }
 
-        let removed: Vec<Utf8PathBuf> = reports.iter().map(|report| report.path.clone()).collect();
-        let parents: BTreeSet<&Utf8Path> =
-            removed.iter().filter_map(|path| path.parent()).collect();
-        for parent in parents {
-            if let Some(report) = prune_empty_dir(parent, &removed, mode)? {
-                print_removal(&report, &mut stdout)?;
-            }
+    Ok(())
+}
+
+fn print_removals_and_prune_parents(
+    reports: &[RemoveReport],
+    mode: WriteMode,
+    output: &mut impl Write,
+) -> Result<()> {
+    for report in reports {
+        print_removal(report, output)?;
+    }
+
+    let removed = reports
+        .iter()
+        .map(|report| report.path.clone())
+        .collect::<Vec<_>>();
+    let parents = removed
+        .iter()
+        .filter_map(|path| path.parent())
+        .collect::<BTreeSet<_>>();
+    for parent in parents {
+        if let Some(report) = prune_empty_dir(parent, &removed, mode)? {
+            print_removal(&report, output)?;
         }
     }
 
@@ -291,6 +476,7 @@ fn print_removal(report: &crate::fs::RemoveReport, output: &mut impl Write) -> R
 }
 
 fn current_dir_utf8() -> Result<Utf8PathBuf> {
-    Utf8PathBuf::from_path_buf(env::current_dir()?)
+    let path = env::current_dir().context("failed to read current directory")?;
+    Utf8PathBuf::from_path_buf(path)
         .map_err(|path| anyhow!("current directory is not valid UTF-8: {}", path.display()))
 }

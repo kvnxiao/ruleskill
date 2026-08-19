@@ -10,11 +10,11 @@ This repo installs its own rule packs as `*-rules` skills (e.g. `rust-rules`, `g
 
 `ruleskill` is a Rust CLI that installs agent skills generated from Markdown rule packs. The catalog lives in `rules/`, the MiniJinja templates live in `templates/skill.md.j2` and `templates/rule.md.j2`, CLI/source code lives in `src/`, and integration tests live in `tests/cli.rs`.
 
-Install the CLI locally with `cargo install --path .`. The installed CLI commands are:
+Install the CLI locally with `just install`. The installed CLI commands are:
 
 - `ruleskill list`
 - `ruleskill validate`
-- `ruleskill install <rule-pack> [--target codex|claude|all|auto] [--dry-run] [--force]`
+- `ruleskill install <rule-pack>|--all [--target codex|claude|all|auto] [--dry-run] [--prune] [--force]`
 - `ruleskill uninstall <rule-pack>|--all [--target codex|claude|all|auto] [--dry-run]`
 
 During development, the same commands can be run with `cargo run -- <command>`.
@@ -29,12 +29,12 @@ The harness target is auto-detected unless `--target` is specified. Auto-detecti
 
 Run the narrowest useful checks for the change, and prefer these before handing work back:
 
-- `cargo fmt --check`
-- `cargo clippy --all-targets --all-features -- -D warnings`
-- `cargo test`
-- `cargo run -- validate` when editing `rules/` or `templates/`
+- `just lint`
+- `just test`
+- `just check` when the change crosses lint and test boundaries
+- `just reeject` when editing `rules/` or `templates/`
 
-Use `cargo fmt` to fix formatting before re-running `cargo fmt --check`.
+Use `just fmt` to fix formatting before re-running `just lint`.
 
 ## Catalog Rules
 
@@ -50,14 +50,14 @@ Generated `SKILL.md` files are rendered from `templates/skill.md.j2` and start w
 
 When a rule pack sets `paths`, the Claude target also writes `.claude/rules/<rule-pack>-rules.md` from `templates/rule.md.j2`: a short pointer whose own `paths` frontmatter makes Claude load it on reading a matching file, telling it to invoke the skill. Never put `paths` in skill frontmatter — Claude Code accepts the field but then hides the skill from the skill listing and rejects `/<rule-pack>-rules` with `Unknown command` until a matching file is read in that session. The Codex target has no rule-file equivalent and gets skills only.
 
-Do not hand-edit generated output under `.agents/skills/`, `.claude/skills/`, or `.claude/rules/`. Edit `rules/` or `templates/`, then regenerate with the CLI. Installs overwrite existing destination files by default; `--force` is accepted for compatibility and currently does not change write behavior.
+Do not hand-edit generated output under `.agents/skills/`, `.claude/skills/`, or `.claude/rules/`. Edit `rules/` or `templates/`, then run `just reeject`. Installs replace existing generated skill folders by default; `--force` is accepted for compatibility and currently does not change replacement behavior. `.ruleskill-prune.toml` records the outputs owned by re-ejection, which removes recorded outputs absent from the catalog.
 
 Remove generated output with `ruleskill uninstall` instead of deleting it by hand, so you do not leave the Claude rule file behind. Uninstall deletes the skill folder and the `.claude/rules/<rule-pack>-rules.md` pointer, then prunes `skills/` and `rules/` once they are empty. It keeps `.claude/` and `.agents/`, because removing them would break harness auto-detection and take other settings with them. `--all` walks the catalog instead of scanning for `*-rules` folders on disk, so it cannot delete a skill that came from somewhere else. This repo has its own generated output checked in, so never run uninstall in the repo root while testing.
 
 ## Rust Conventions
 
-This is a Rust 2021 project. Keep CLI errors actionable with `anyhow::Context`, use `camino` for UTF-8 paths where the existing code does, and preserve the existing path-safety checks for catalog files.
+This is a Rust 2024 project. `Cargo.toml`'s `package.rust-version` field declares the minimum supported Rust version. Keep CLI errors actionable, use `camino` for UTF-8 paths where the existing code does, and preserve the existing path-safety checks for catalog files.
 
-When changing behavior, add or update integration tests in `tests/cli.rs`. The tests use `assert_cmd`, `assert_fs`, `predicates`, and temporary fixture catalogs.
+When changing behavior, add or update integration tests in `tests/cli.rs`. The tests use `assert_cmd`, `predicates`, `tempfile`, and temporary fixture catalogs.
 
 Avoid adding dependencies unless they materially simplify the implementation. If dependencies change, keep `Cargo.lock` updated.

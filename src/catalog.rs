@@ -1,12 +1,11 @@
 use std::collections::HashSet;
 use std::env;
-use std::fs;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use camino::{Utf8Component, Utf8Path, Utf8PathBuf};
+use fs_err as fs;
 use serde::{Deserialize, Serialize};
 use strsim::jaro_winkler;
-use walkdir::WalkDir;
 
 use crate::render;
 
@@ -97,20 +96,24 @@ impl Catalog {
         let rule_template = read_template(&root, RULE_TEMPLATE)?;
 
         let rules_dir = root.join("rules");
-        if !rules_dir.is_dir() {
-            bail!("catalog rules directory does not exist: {rules_dir}");
-        }
-
         let mut skills = Vec::new();
-        for entry in WalkDir::new(&rules_dir).min_depth(2).max_depth(2) {
-            let entry = entry.with_context(|| format!("failed to walk {rules_dir}"))?;
-            let is_manifest =
-                entry.path().file_name().and_then(|name| name.to_str()) == Some("skill.toml");
-            if !entry.file_type().is_file() || !is_manifest {
+        for entry in fs::read_dir(&rules_dir)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir() {
                 continue;
             }
 
-            let manifest_path = path_to_utf8(entry.path())?;
+            let manifest_path = entry.path().join("skill.toml");
+            let metadata = match fs::symlink_metadata(&manifest_path) {
+                Ok(metadata) => metadata,
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(err) => return Err(err.into()),
+            };
+            if !metadata.is_file() {
+                continue;
+            }
+
+            let manifest_path = path_to_utf8(&manifest_path)?;
             let dir = manifest_path
                 .parent()
                 .ok_or_else(|| anyhow!("manifest has no parent directory: {manifest_path}"))?
@@ -119,8 +122,7 @@ impl Catalog {
                 .file_name()
                 .ok_or_else(|| anyhow!("skill directory has no name: {dir}"))?
                 .to_owned();
-            let manifest_text = fs::read_to_string(&manifest_path)
-                .with_context(|| format!("failed to read {manifest_path}"))?;
+            let manifest_text = fs::read_to_string(&manifest_path)?;
             let manifest = toml::from_str::<SkillManifest>(&manifest_text)
                 .with_context(|| format!("failed to parse {manifest_path}"))?;
 
@@ -211,8 +213,6 @@ impl Skill {
         non_empty(self.manifest.name.as_deref())
     }
 
-    /// The name becomes a path segment under the harness folder, so anything but kebab-case is
-    /// rejected here.
     pub(crate) fn output_name(&self) -> Result<String> {
         let Some(name) = self.name() else {
             bail!("{}: name is required", self.manifest_path);
@@ -390,7 +390,7 @@ fn default_catalog_root() -> Result<Utf8PathBuf> {
 
 fn read_template(root: &Utf8Path, name: &str) -> Result<String> {
     let path = root.join("templates").join(name);
-    fs::read_to_string(&path).with_context(|| format!("failed to read template at {path}"))
+    Ok(fs::read_to_string(path)?)
 }
 
 fn split_paths(paths: &str) -> Vec<&str> {
@@ -440,6 +440,10 @@ fn is_kebab_case(value: &str) -> bool {
     }
 
     saw_char && !previous_was_hyphen
+}
+
+pub(crate) fn is_output_skill_name(value: &str) -> bool {
+    value.ends_with("-rules") && is_kebab_case(value)
 }
 
 fn is_safe_relative_path(path: &str) -> bool {
