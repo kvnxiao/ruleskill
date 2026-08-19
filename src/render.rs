@@ -22,21 +22,11 @@ pub(crate) fn render_template(
 #[cfg(test)]
 mod tests {
     use super::render_template;
-    use serde::Serialize;
-
-    #[derive(Serialize)]
-    struct Context {
-        value: &'static str,
-    }
 
     #[test]
     fn render_template_normalizes_newlines() {
-        let rendered = render_template(
-            "test",
-            "first\r\n{{ value }}\r\nthird",
-            &Context { value: "second" },
-        )
-        .expect("template should render");
+        let rendered = render_template("test", "first\r\nsecond\r\nthird", &())
+            .expect("template should render");
 
         assert_eq!(rendered, "first\nsecond\nthird");
     }
