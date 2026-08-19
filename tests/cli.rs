@@ -407,6 +407,89 @@ fn packs_without_paths_produce_no_rule_file() {
 }
 
 #[test]
+fn install_without_paths_removes_stale_claude_rule_file() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "without-paths");
+    write(
+        catalog.path().join("rules/without-paths/example.md"),
+        "# Ex\n",
+    );
+
+    let repo = TempDir::new().unwrap();
+    let stale_rule = repo.path().join(".claude/rules/without-paths-rules.md");
+    write(&stale_rule, "stale\n");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(["install", "without-paths", "--target", "claude"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("removed"))
+        .stdout(predicate::str::contains("pruned"));
+
+    assert!(!stale_rule.exists());
+    assert!(!repo.path().join(".claude/rules").exists());
+}
+
+#[test]
+fn install_without_paths_preserves_unrelated_claude_rule_files() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "without-paths");
+    write(
+        catalog.path().join("rules/without-paths/example.md"),
+        "# Ex\n",
+    );
+
+    let repo = TempDir::new().unwrap();
+    let stale_rule = repo.path().join(".claude/rules/without-paths-rules.md");
+    let unrelated_rule = repo.path().join(".claude/rules/unrelated.md");
+    write(&stale_rule, "stale\n");
+    write(&unrelated_rule, "unrelated\n");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args(["install", "without-paths", "--target", "claude"])
+        .assert()
+        .success();
+
+    assert!(!stale_rule.exists());
+    assert_file_equals(unrelated_rule, "unrelated\n");
+}
+
+#[test]
+fn install_without_paths_dry_run_reports_stale_claude_rule_file() {
+    let catalog = minimal_catalog();
+    seed_pack(&catalog, "without-paths");
+    write(
+        catalog.path().join("rules/without-paths/example.md"),
+        "# Ex\n",
+    );
+
+    let repo = TempDir::new().unwrap();
+    let stale_rule = repo.path().join(".claude/rules/without-paths-rules.md");
+    write(&stale_rule, "stale\n");
+
+    cmd()
+        .env("RULESKILL_CATALOG_DIR", catalog.path())
+        .current_dir(repo.path())
+        .args([
+            "install",
+            "without-paths",
+            "--target",
+            "claude",
+            "--dry-run",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("would remove"))
+        .stdout(predicate::str::contains("would prune"));
+
+    assert_file_equals(stale_rule, "stale\n");
+}
+
+#[test]
 fn validate_fails_for_blank_paths() {
     let catalog = minimal_catalog();
     write(

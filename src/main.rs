@@ -164,12 +164,20 @@ fn install(skill_name: Option<&str>, target: Target, dry_run: bool, force: bool)
             print_report(&report, &mut stdout)?;
         }
 
-        if let (Some(content), Some(path)) = (
-            rule_md.as_deref(),
-            harness.rule_file(&repo_root, &resolved.render.output_name),
-        ) {
-            let report = write_generated(&path, content, mode, force)?;
-            print_report(&report, &mut stdout)?;
+        if let Some(path) = harness.rule_file(&repo_root, &resolved.render.output_name) {
+            if let Some(content) = rule_md.as_deref() {
+                let report = write_generated(&path, content, mode, force)?;
+                print_report(&report, &mut stdout)?;
+            } else if let Some(report) = remove_generated(&path, mode)? {
+                print_removal(&report, &mut stdout)?;
+                if let Some(parent) = path.parent() {
+                    if let Some(report) =
+                        prune_empty_dir(parent, std::slice::from_ref(&path), mode)?
+                    {
+                        print_removal(&report, &mut stdout)?;
+                    }
+                }
+            }
         }
     }
 
