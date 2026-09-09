@@ -1,0 +1,70 @@
+name = "pi-coding-agent"
+title = "TypeScript and Pi Coding Agent Rules"
+description = "Use for developing and reviewing Pi Coding Agent extensions, tools, packages, TUI components, and SDK or RPC integrations, including TypeScript architecture, domain modeling, asynchronous work, errors, performance, and testing."
+paths = "**/*.ts,**/*.tsx,**/*.mts,**/*.cts,**/*.js,**/*.mjs,**/*.cjs,**/package.json,**/.pi/settings.json"
+
+# Pi citation baseline: v0.85.1. Revalidate linked contracts before changing the tag.
+[[rules]]
+title = "Pi design and compatibility"
+file = "pi-design-and-compatibility.md"
+when = "Read when choosing a Pi customization mechanism, importing Pi APIs, or deciding which guidance belongs in code, skills, or lint configuration."
+
+[[rules]]
+title = "Pi lifecycle"
+file = "pi-lifecycle.md"
+when = "Read when registering extensions, starting background resources, choosing cancellation signals, reloading, replacing sessions, or reporting agent completion."
+
+[[rules]]
+title = "Pi tools"
+file = "pi-tools.md"
+when = "Read when designing tool schemas, returning results, overriding built-in tools, bounding output, or mutating files from concurrent tools."
+
+[[rules]]
+title = "Pi session state"
+file = "pi-session-state.md"
+when = "Read when persisting extension state, reconstructing branches, caching session data, or evolving saved data and tool argument formats."
+
+[[rules]]
+title = "Pi context"
+file = "pi-context.md"
+when = "Read when injecting instructions, transforming messages, queuing agent input, or customizing compaction."
+
+[[rules]]
+title = "Pi UI and RPC"
+file = "pi-ui-and-rpc.md"
+when = "Read when prompting users, rendering terminal components, supporting noninteractive modes, or implementing an RPC client."
+
+[[rules]]
+title = "Pi packages and SDK"
+file = "pi-packages-and-sdk.md"
+when = "Read when distributing Pi resources, choosing dependencies, embedding sessions, or configuring resource discovery and working directories."
+
+[[rules]]
+title = "TypeScript architecture"
+file = "typescript-architecture.md"
+when = "Read when organizing modules, separating domain logic from adapters, defining ownership, deriving schema or registry metadata, or introducing an abstraction."
+
+[[rules]]
+title = "TypeScript domain boundaries"
+file = "typescript-domain-boundaries.md"
+when = "Read when modeling workflow states, validating external data, comparing structured input by meaning, distinguishing identifiers or units, or designing public data contracts."
+
+[[rules]]
+title = "TypeScript asynchronous work and errors"
+file = "typescript-async-and-errors.md"
+when = "Read when assigning asynchronous task ownership, propagating cancellation, coordinating concurrent mutations, retrying operations, or translating errors."
+
+[[rules]]
+title = "TypeScript workflows"
+file = "typescript-workflows.md"
+when = "Read when binding actions to state versions, defining derived-output validity, recovering partial transitions, or replacing modal interactions."
+
+[[rules]]
+title = "TypeScript performance"
+file = "typescript-performance.md"
+when = "Read when processing large inputs or streams, scheduling expensive work, introducing caches, or investigating latency and memory use."
+
+[[rules]]
+title = "Testing"
+file = "pi-testing.md"
+when = "Read when testing domain contracts, event ordering, recovery and retry, Pi lifecycle transitions, tool execution, or package installation."

@@ -4,6 +4,8 @@
 
 Use it to keep reusable engineering rules in one catalog, then render them into harness-specific skill folders for Codex or Claude Code. The source of truth for rules is in `rules/`; generated files are written under `.agents/skills/` or `.claude/skills/` in the directory that runs `ruleskill install <rule-pack>`. Rule packs that set `paths` also get a path-scoped `.claude/rules/` pointer for the Claude target.
 
+The catalog includes `rust`, `github-actions`, `solidjs`, and `pi-coding-agent`. The [Pi Coding Agent pack](rules/pi-coding-agent/skill.toml) covers Pi extensions, tools, packages, TUI components, and SDK or RPC integrations, plus TypeScript architecture, domain boundaries, asynchronous work, performance, and testing decisions that require engineering judgment.
+
 ## Usage
 
 Install `ruleskill` from this checkout:
@@ -29,6 +31,7 @@ Install a skill (harness target is auto-detected, unless `--target` is specified
 ```sh
 ruleskill install rust # auto-detect harness target
 ruleskill install github-actions --target claude # specify harness target
+ruleskill install pi-coding-agent --target codex # install TypeScript and Pi development rules
 ruleskill install rust --target all # install for all supported harness targets
 ruleskill install --all --target all # install every catalog pack for every target
 ruleskill install --all --target all --prune # also remove obsolete rule-pack outputs

@@ -1,6 +1,6 @@
 ---
 paths: **/*.{rs,toml}
-description: "General Rust code-quality patterns; edition and MSRV, enums over booleans and strings, #[must_use], and choosing function parameter types."
+description: "General Rust code-quality patterns; edition and MSRV, derived metadata, enums over booleans and strings, #[must_use], and choosing function parameter types."
 ---
 
 # Code Quality Standards
@@ -14,6 +14,12 @@ Default the project to a deliberate edition and a declared minimum supported Rus
 edition = "2024"
 rust-version = "1.95"
 ```
+
+## Derive collection and package metadata (Default)
+
+Derive collection lengths and catalog membership from their data. Read package identity from Cargo metadata instead of maintaining a separate version or package-name string. Keep deliberate limits, protocol constants, and supported-version policies explicit; they define choices that the data cannot determine.
+
+For tests over a catalog or fixture directory, discover members and derive counts from the fixtures. Keep expected parser results, serialized bytes, and golden outputs independent of the implementation under test.
 
 ## Prefer Enums Over Booleans (Default)
 
