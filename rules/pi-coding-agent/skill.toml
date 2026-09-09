@@ -3,6 +3,7 @@ title = "TypeScript and Pi Coding Agent Rules"
 description = "Use for developing and reviewing Pi Coding Agent extensions, tools, packages, TUI components, and SDK or RPC integrations, including TypeScript architecture, domain modeling, asynchronous work, errors, performance, and testing."
 paths = "**/*.ts,**/*.tsx,**/*.mts,**/*.cts,**/*.js,**/*.mjs,**/*.cjs,**/package.json,**/.pi/settings.json"
 
+# Pi citation baseline: v0.85.1. Revalidate linked contracts before changing the tag.
 [[rules]]
 title = "Pi design and compatibility"
 file = "pi-design-and-compatibility.md"
@@ -56,7 +57,7 @@ when = "Read when assigning asynchronous task ownership, propagating cancellatio
 [[rules]]
 title = "TypeScript workflows"
 file = "typescript-workflows.md"
-when = "Read when binding user actions to revisions, invalidating derived artifacts, recovering failed transitions, or switching between interactive views."
+when = "Read when binding actions to state versions, defining derived-output validity, recovering partial transitions, or replacing modal interactions."
 
 [[rules]]
 title = "TypeScript performance"
@@ -66,4 +67,4 @@ when = "Read when processing large inputs or streams, scheduling expensive work,
 [[rules]]
 title = "Testing"
 file = "pi-testing.md"
-when = "Read when testing domain contracts, recovery and retry, browser or terminal interactions, Pi lifecycle transitions, tool execution, package installation, or reporting verification evidence."
+when = "Read when testing domain contracts, event ordering, recovery and retry, Pi lifecycle transitions, tool execution, or package installation."

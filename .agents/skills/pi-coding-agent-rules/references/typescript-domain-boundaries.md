@@ -14,9 +14,7 @@ Normalize accepted external representations into one internal representation at 
 
 ## Compare structured inputs by domain meaning (Conditional)
 
-When equality controls answer reuse, revision identity, or cache validity, define which fields determine meaning. JSON object member order must not change identity. Normalize nested fields that determine meaning, including options and recommendations; preserve stable option identifiers. Sort a collection only when its order has no domain meaning. Do not use raw serialization as an equality contract.
-
-Verify equivalent objects with reordered keys, meaningful changes to nested fields, and reordered collections whose order matters. Assert that equivalent input preserves existing work and changed meaning invalidates only its dependents.
+When equality controls deduplication, change detection, or cache validity, define which fields determine meaning. JSON objects are unordered collections of members; arrays are ordered sequences. Include meaningful nested fields and preserve element identities. Sort a collection only when its order has no domain meaning: a set of labels can be order-independent, while a sequence of transformations is not. Do not substitute raw serialization equality for domain equality. [JSON data structures](https://www.rfc-editor.org/rfc/rfc8259.html#section-1).
 
 ## Distinguish identifiers and units when substitution is hazardous (Conditional)
 

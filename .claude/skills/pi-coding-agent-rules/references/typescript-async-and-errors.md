@@ -12,7 +12,7 @@ Run independent reads concurrently within a limit that matches service capacity 
 
 When concurrent work partially fails, define whether siblings should finish, cancel, or contribute a partial result. `Promise.all` rejects on a failure but does not cancel the other operations. Do not report atomic success for a workflow whose earlier writes have already committed. [Promise.all](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all).
 
-When an interaction or mutation depends on the previous operation finishing, preserve sequential `await` even if a generic lint rule recommends concurrency. Use a narrowly scoped suppression that states the ordering constraint. Test that the dependent operation cannot start before its prerequisite completes.
+When an interaction or mutation depends on the previous operation finishing, preserve sequential `await`. If the project enables `no-await-in-loop`, suppress it at the affected statement and state the ordering constraint. [Sequential-await exceptions](https://eslint.org/docs/latest/rules/no-await-in-loop#when-not-to-use-it).
 
 ## Retry only within the operation's safety contract (Conditional)
 
