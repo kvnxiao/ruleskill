@@ -11,7 +11,7 @@ when = "Read when adding or reviewing public APIs, constructors, traits, macros,
 [[rules]]
 title = "Code quality"
 file = "rust-code-quality.md"
-when = "Read when implementing or reviewing Rust code for maintainability, idioms, module shape, naming, and readability."
+when = "Read when implementing or reviewing Rust code for maintainability, idioms, module shape, naming, and readability, or when deriving collection and package metadata."
 
 [[rules]]
 title = "Defensive programming"

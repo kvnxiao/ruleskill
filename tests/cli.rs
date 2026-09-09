@@ -7,23 +7,23 @@ use predicates::prelude::*;
 use tempfile::TempDir;
 
 #[test]
-fn list_discovers_seeded_skills() {
-    cmd()
-        .arg("list")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("github-actions"))
-        .stdout(predicate::str::contains("rust"))
-        .stdout(predicate::str::contains("solidjs"));
+fn list_discovers_catalog_skills() {
+    let mut assertion = cmd().arg("list").assert().success();
+    for name in catalog_skill_names() {
+        assertion = assertion.stdout(predicate::str::contains(format!("{name}\n")));
+    }
 }
 
 #[test]
-fn validate_passes_for_seeded_skills() {
+fn validate_passes_for_catalog_skills() {
+    let skill_count = catalog_skill_names().len();
     cmd()
         .arg("validate")
         .assert()
         .success()
-        .stdout(predicate::str::contains("validated 3 skill(s)"));
+        .stdout(predicate::str::contains(format!(
+            "validated {skill_count} skill(s)"
+        )));
 }
 
 #[test]
@@ -1004,6 +1004,19 @@ fn uninstall_rejects_a_pack_together_with_all() {
 
 fn cmd() -> Command {
     Command::cargo_bin("ruleskill").unwrap()
+}
+
+fn catalog_skill_names() -> Vec<String> {
+    let rules_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("rules");
+    let mut names = Vec::new();
+    for entry in fs::read_dir(rules_dir).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_dir() && entry.path().join("skill.toml").is_file() {
+            names.push(entry.file_name().into_string().unwrap());
+        }
+    }
+    assert!(!names.is_empty(), "expected a nonempty rule catalog");
+    names
 }
 
 fn seed_pack(catalog: &TempDir, name: &str) {

@@ -1,2 +1,2 @@
-codex = ["github-actions-rules", "rust-rules", "solidjs-rules"]
-claude = ["github-actions-rules", "rust-rules", "solidjs-rules"]
+codex = ["github-actions-rules", "pi-coding-agent-rules", "rust-rules", "solidjs-rules"]
+claude = ["github-actions-rules", "pi-coding-agent-rules", "rust-rules", "solidjs-rules"]
