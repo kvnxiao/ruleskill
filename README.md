@@ -10,8 +10,8 @@ for the Claude target.
 
 The catalog includes `rust`, `github-actions`, `solidjs`, and `pi-coding-agent`. The
 [Pi Coding Agent pack](rules/pi-coding-agent/skill.toml) covers Pi extensions, tools, packages, TUI
-components, and SDK or RPC integrations, plus TypeScript architecture, domain boundaries,
-asynchronous work, performance, and testing decisions that require engineering judgment.
+components, and SDK or RPC integrations, plus TypeScript architecture, code organization, domain
+boundaries, asynchronous work, performance, and testing decisions that require engineering judgment.
 
 ## Usage
 
