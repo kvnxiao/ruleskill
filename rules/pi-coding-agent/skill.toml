@@ -47,12 +47,12 @@ when = "Read when designing keyboard navigation, inline editing, question or rev
 [[rules]]
 title = "Pi packages and SDK"
 file = "pi-packages-and-sdk.md"
-when = "Read when distributing Pi resources, choosing dependencies, embedding sessions, or configuring resource discovery and working directories."
+when = "Read when distributing Pi resources, declaring package dependencies, embedding sessions, or configuring resource discovery and working directories."
 
 [[rules]]
 title = "TypeScript architecture"
 file = "typescript-architecture.md"
-when = "Read when organizing modules, separating domain logic from adapters, defining ownership, deriving schema or registry metadata, or introducing an abstraction."
+when = "Read when organizing modules, separating domain logic from adapters, defining ownership, transforming derived data, deriving schema or registry metadata, or introducing an abstraction."
 
 [[rules]]
 title = "TypeScript domain boundaries"
@@ -72,7 +72,7 @@ when = "Read when binding actions to state versions, defining derived-output val
 [[rules]]
 title = "TypeScript performance"
 file = "typescript-performance.md"
-when = "Read when processing large inputs or streams, scheduling expensive work, introducing caches, or investigating latency and memory use."
+when = "Read when choosing collection pipelines or libraries, checking iterator compatibility, processing large inputs or streams, scheduling expensive work, introducing caches, or investigating latency and memory use."
 
 [[rules]]
 title = "Testing"

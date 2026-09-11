@@ -24,6 +24,16 @@ When a schema or registry already defines supported choices, derive selectors, m
 
 When naming a constant, describe the policy or unit it represents. Equal values can belong to unrelated policies; do not couple them through a shared constant solely because their literals match. Add configuration only when callers need to vary the choice.
 
+## Prefer functional transformations for derived data (Default)
+
+Default to small pure functions and readable `map`, `filter`, and related transformations. Keep transformation callbacks free of externally visible side effects. When a long transformation becomes hard to follow, name intermediate values. Use `reduce` for clear accumulations; avoid reducers that combine unrelated state or obscure execution order.
+
+Keep imperative control flow for sequential asynchronous work, cancellation, early exits, resource cleanup, and state transitions. Preserve the ordering and ownership contracts in [asynchronous work and errors](typescript-async-and-errors.md).
+
+When it simplifies implementation or avoids repeated copying, allow mutation of freshly created local collections. A function can populate a local array with `push` and remain pure without mutating inputs or shared state. Local collection ownership does not permit mutation of borrowed elements.
+
+Do not replace readable transformations with loops solely on an assumed performance advantage. For lazy pipelines, collection dependencies, compatibility checks, and measurement, apply the [performance rules](typescript-performance.md).
+
 ## Keep public APIs narrower than implementation dependencies (Default)
 
 Accept the data and capabilities an operation uses. Do not pass the entire extension context through domain modules for access to a clock, filesystem operation, or notification callback. Inject those capabilities at real I/O or lifetime boundaries; do not wrap every library function.

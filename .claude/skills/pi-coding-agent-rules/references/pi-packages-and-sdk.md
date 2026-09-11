@@ -12,6 +12,8 @@ For Pi packages, declare imported host-provided Pi packages and TypeBox in `peer
 
 Put third-party runtime dependencies in `dependencies`. Production installation can omit `devDependencies`. When distributing another Pi package's resources inside the package, follow Pi's `bundledDependencies` convention and reference the bundled resource paths. Standalone SDK applications own their runtime dependencies directly. [Dependency contract](https://github.com/earendil-works/pi/blob/v0.85.1/packages/coding-agent/docs/packages.md#dependencies).
 
+Before adding a collection library, apply the [collection dependency selection rules](typescript-performance.md#select-collection-dependencies-by-required-capabilities-default).
+
 ## Make embedding boundaries explicit (Default)
 
 For an embedded session, set the intended working directory, persistence policy, resource loader, and active tools. Do not inherit user-global extensions or credentials accidentally in a service or test harness. When user customization is a product requirement, load it deliberately through the supported resource APIs.
