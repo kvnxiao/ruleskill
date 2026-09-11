@@ -1,0 +1,15 @@
+{
+  "markdown": {
+    "lineWidth": 100,
+    "textWrap": "always"
+  },
+  "excludes": [
+    ".agents/",
+    ".claude/",
+    "templates/",
+    "target/"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/markdown-0.24.0.wasm@cf7e65674b7eb5d91f85152ae9020dc8b3e73bd7944efcbfb05df71081217764"
+  ]
+}

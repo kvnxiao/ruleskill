@@ -24,6 +24,11 @@ jobs:
           rustup toolchain install nightly --profile minimal --component rustfmt
       - name: Check formatting
         run: cargo +nightly fmt --all --check
+      - name: Check Markdown formatting
+        uses: dprint/check@7dc032d8874778fc024f6f9b4a7e6d896782c330 # v2.5
+        with:
+          dprint-version: "0.57.4"
+          cache: true
       - name: Run Clippy
         run: cargo +stable clippy --all-targets --all-features --locked -- -D warnings
       - name: Check generated skills
