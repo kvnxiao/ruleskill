@@ -30,9 +30,19 @@ file = "pi-context.md"
 when = "Read when injecting instructions, transforming messages, queuing agent input, or customizing compaction."
 
 [[rules]]
+title = "Pi settings and commands"
+file = "pi-settings-and-commands.md"
+when = "Read when adding extension settings, choosing configuration scopes, registering commands, or evaluating native settings integration."
+
+[[rules]]
 title = "Pi UI and RPC"
 file = "pi-ui-and-rpc.md"
 when = "Read when prompting users, rendering terminal components, supporting noninteractive modes, or implementing an RPC client."
+
+[[rules]]
+title = "Pi TUI interactions"
+file = "pi-tui-interactions.md"
+when = "Read when designing keyboard navigation, inline editing, question or review flows, modal dismissal, composer modes, or terminal layout."
 
 [[rules]]
 title = "Pi packages and SDK"
@@ -67,4 +77,4 @@ when = "Read when processing large inputs or streams, scheduling expensive work,
 [[rules]]
 title = "Testing"
 file = "pi-testing.md"
-when = "Read when testing domain contracts, event ordering, recovery and retry, Pi lifecycle transitions, tool execution, or package installation."
+when = "Read when testing domain contracts, event ordering, recovery and retry, Pi lifecycle transitions, terminal interactions, settings, tool execution, or package installation."
