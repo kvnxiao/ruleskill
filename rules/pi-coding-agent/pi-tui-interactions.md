@@ -17,10 +17,10 @@ hints; hotkeys should accelerate reachable operations. Avoid requiring modified 
 that some terminals cannot distinguish.
 
 In an editor, arrows move the cursor and printable keys enter text. Option letters are labels unless
-explicitly assigned as shortcuts; shortcuts must not consume inline text. Multiline fields follow
-Pi's editor bindings: by default, Enter submits or finishes local editing, and Shift+Enter and
-Ctrl+J insert newlines. Honor the effective `tui.input.submit` and `tui.input.newLine` bindings.
-Finishing local editing does not submit the enclosing form; provide visible controls for sending
+explicitly assigned as shortcuts; shortcuts must not consume inline text. Multiline fields use Pi's
+editor bindings: by default, Enter submits or finishes local editing, and Shift+Enter and Ctrl+J
+insert newlines. Match the effective `tui.input.submit` and `tui.input.newLine` bindings. Finishing
+local editing does not submit the enclosing form; provide visible controls for sending
 clarification, submitting answers, or approving a document. An optional shortcut may activate the
 same submission action as a visible control. Apply the same validation and confirmation boundary,
 preserve ordinary typing and newline input, and derive its hint from the binding. Modified Enter may
@@ -45,11 +45,15 @@ registered shortcut a description for `/hotkeys`. Do not implement composer shor
 terminal listeners or a parallel shortcut dispatcher.
 [registerShortcut](https://github.com/earendil-works/pi/blob/v0.85.1/packages/coding-agent/docs/extensions.md#piregistershortcutshortcut-options).
 
-`pi.registerShortcut` binds a raw key rather than a rebindable id and dispatches only while the
-composer editor holds focus. Inside a focused `ctx.ui.custom()` component, use the injected
-`KeybindingsManager.matches(data, id)` for host actions and the SDK's `matchesKey(data, key)` for
-extension-owned keys. When an action has a host action id, reuse it; do not replace it with its
-default key or compare raw escape sequences.
+`pi.registerShortcut` binds a raw key rather than a rebindable id. While the composer editor has
+focus, Pi dispatches registered shortcuts. Inside a focused `ctx.ui.custom()` component, use the
+injected `KeybindingsManager.matches(data, id)` for host actions and the SDK's `matchesKey(data,
+key)` for extension-owned keys. When an action has a host action id, reuse it; do not replace it
+with its default key or compare raw escape sequences.
+
+When the SDK matcher lacks a supported terminal encoding, isolate its conversion to an encoding the
+SDK accepts, then match through the SDK. Test equivalent encodings and preserve effective binding
+overrides; the adapter must not dispatch actions itself.
 
 ## Never hardcode displayed hotkey labels (Required)
 
@@ -63,8 +67,8 @@ this rule.
 For a host action, pass the namespaced `app.*` or `tui.*` id to `keyHint(id, description)` or
 `keyText(id)`, which resolve the user's `keybindings.json` override. For an extension-owned key,
 define one `KeyId` and pass it to `pi.registerShortcut` or `matchesKey`, and to `rawKeyHint` for
-display. Both formatters capitalize key parts and render `alt` as `option` on macOS; a label written
-as literal text states a key that the handler may not match.
+display. Both formatters render `alt` as `option` on macOS; capitalization depends on the formatter
+and SDK version. A label written as literal text states a key that the handler may not match.
 [Keybinding hints](https://github.com/earendil-works/pi/blob/v0.85.1/packages/coding-agent/docs/extensions.md#keybinding-hints),
 [Keybinding ids](https://github.com/earendil-works/pi/blob/v0.85.1/packages/coding-agent/docs/keybindings.md).
 
