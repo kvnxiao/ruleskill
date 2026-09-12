@@ -10,24 +10,34 @@ file = "pi-design-and-compatibility.md"
 when = "Read when choosing a Pi customization mechanism, importing Pi APIs, or deciding which guidance belongs in code, skills, or lint configuration."
 
 [[rules]]
+title = "Pi trust and authorization"
+file = "pi-trust-and-authorization.md"
+when = "Read when implementing approval flows, project trust, execution permissions, credential access, or unattended work."
+
+[[rules]]
+title = "Pi delegation"
+file = "pi-delegation.md"
+when = "Read when spawning child agents, assigning shared workspace ownership, integrating delegated results, or propagating permissions and cancellation."
+
+[[rules]]
 title = "Pi lifecycle"
 file = "pi-lifecycle.md"
-when = "Read when registering extensions, starting background resources, choosing cancellation signals, reloading, replacing sessions, or reporting agent completion."
+when = "Read when registering extensions, owning cancellation or background tasks, bounding automatic continuation, reloading, handing work to a replacement session, or reporting agent completion."
 
 [[rules]]
 title = "Pi tools"
 file = "pi-tools.md"
-when = "Read when designing tool schemas, returning results, overriding built-in tools, bounding output, or mutating files from concurrent tools."
+when = "Read when designing tool schemas, returning results, terminating automatic continuation, overriding built-in tools, bounding output, or mutating files from concurrent tools."
 
 [[rules]]
 title = "Pi session state"
 file = "pi-session-state.md"
-when = "Read when persisting extension state, reconstructing branches, caching session data, or evolving saved data and tool argument formats."
+when = "Read when persisting extension state, recovering interrupted mutations, defining rewind, reconstructing branches, caching session data, or evolving saved data and tool argument formats."
 
 [[rules]]
 title = "Pi context"
 file = "pi-context.md"
-when = "Read when injecting instructions, transforming messages, queuing agent input, or customizing compaction."
+when = "Read when injecting instructions, transforming context, preserving authority through compaction, retaining learned memory, queuing agent input, or dispatching extension commands."
 
 [[rules]]
 title = "Pi settings and commands"
@@ -37,7 +47,7 @@ when = "Read when adding extension settings, choosing configuration scopes, regi
 [[rules]]
 title = "Pi UI and RPC"
 file = "pi-ui-and-rpc.md"
-when = "Read when prompting users, rendering terminal components, supporting noninteractive modes, or implementing an RPC client."
+when = "Read when prompting users, completing or dismissing UI, sequencing selectors, rendering terminal components, supporting noninteractive modes, or implementing an RPC client."
 
 [[rules]]
 title = "Pi TUI interactions"
@@ -47,7 +57,7 @@ when = "Read when designing keyboard navigation, inline editing, question or rev
 [[rules]]
 title = "Pi packages and SDK"
 file = "pi-packages-and-sdk.md"
-when = "Read when distributing Pi resources, declaring package dependencies, embedding sessions, or configuring resource discovery and working directories."
+when = "Read when distributing Pi resources, declaring package dependencies, embedding sessions, switching model or remote-tool integrations, or configuring resource discovery and working directories."
 
 [[rules]]
 title = "TypeScript architecture"
