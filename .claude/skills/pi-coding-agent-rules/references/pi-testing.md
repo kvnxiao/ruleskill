@@ -6,6 +6,15 @@ Test accepted and rejected state transitions, boundary validation, and externall
 results. A test should fail when the contract breaks even if private helpers or file layout change.
 Keep pure domain tests independent of Pi and terminal rendering.
 
+For closed variant mappings, derive exercised variant membership from the authoritative schema or
+registry and assert observable results against an exhaustive test-owned expected mapping, such as
+`expected satisfies Record<Variant, ExpectedShape>`. Keep expected values independent of the
+production mapping; do not import, copy, or calculate them from that mapping. When the declaration
+exists only as a TypeScript union, use the exhaustive expected mapping to enumerate test cases.
+Adding a variant must cause a compile-time failure, a missing-case test failure, or both until its
+expectations are supplied. Cover unavailable facets and required equality between uses. Test state
+classification precedence separately from the selected values.
+
 For asynchronous state changes, control completion order with deferred operations or a fake clock.
 When the operation supports cancellation, cover cancellation before work starts and during I/O. When
 the owner can change, test a stale completion after replacement. Avoid timing assertions that depend
