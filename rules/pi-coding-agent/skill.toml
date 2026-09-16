@@ -1,6 +1,6 @@
 name = "pi-coding-agent"
 title = "TypeScript and Pi Coding Agent Rules"
-description = "Use for developing and reviewing Pi Coding Agent extensions, tools, packages, TUI components, and SDK or RPC integrations, including TypeScript architecture, code organization, public API documentation, domain modeling, asynchronous work, errors, performance, and testing."
+description = "Use for developing and reviewing Pi Coding Agent extensions, tools, packages, TUI components, and SDK or RPC integrations, including TypeScript architecture, code organization, public API documentation, domain modeling, asynchronous work, thrown errors, remediation text, cancellation, performance, and testing."
 paths = "**/*.ts,**/*.tsx,**/*.mts,**/*.cts,**/*.js,**/*.mjs,**/*.cjs,**/package.json,**/.pi/settings.json"
 
 # Pi citation baseline: v0.85.1. Revalidate linked contracts before changing the tag.
@@ -33,6 +33,11 @@ when = "Read when designing tool schemas, returning results, terminating automat
 title = "Pi session state"
 file = "pi-session-state.md"
 when = "Read when persisting extension state, recovering interrupted mutations, defining rewind, reconstructing branches, caching session data, or evolving saved data and tool argument formats."
+
+[[rules]]
+title = "Pi failure signaling"
+file = "pi-failure-signaling.md"
+when = "Read when a tool's execute throws or returns a failure, when converting an extension error into a tool result, notification, or TUI message, when reacting to the execute signal or ctx.signal, when reporting a cancelled or unsupported-mode outcome, or when handing a callback to another extension."
 
 [[rules]]
 title = "Pi context"
@@ -78,6 +83,11 @@ when = "Read when modeling workflow states, validating external data, comparing 
 title = "TypeScript asynchronous work and errors"
 file = "typescript-async-and-errors.md"
 when = "Read when assigning asynchronous task ownership, propagating cancellation, coordinating concurrent mutations, retrying operations, or translating errors."
+
+[[rules]]
+title = "TypeScript error contracts"
+file = "typescript-error-contracts.md"
+when = "Read when writing a throw or a catch, defining an error class or kind, choosing between a result variant, a thrown error, and cancellation, composing remediation or retry text, handling an AbortSignal reason, documenting the errors a callback may throw, or asserting a failure in a test."
 
 [[rules]]
 title = "TypeScript workflows"
