@@ -1,5 +1,8 @@
 # Pi failure signaling
 
+For a failure passed to different consumers, read the
+[worked example](typescript-failure-examples.md#preserve-a-conflict-until-its-consumer-renders-it).
+
 ## Failed tool results carry text only (Required)
 
 Throw from `execute` to fail, and render any data the model needs into the message in a fixed form,

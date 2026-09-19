@@ -1,5 +1,9 @@
 # TypeScript error contracts
 
+For an implementation with focused assertions, read the optional
+[failure propagation example](typescript-failure-examples.md) or
+[cancellation ownership example](typescript-cancellation-example.md) for the contract being changed.
+
 ## Decide outcome, thrown error, or abort reason before writing a throw (Default)
 
 Choose the channel from the operation's contract: return an expected answer as a result variant,
