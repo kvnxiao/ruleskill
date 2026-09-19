@@ -90,16 +90,6 @@ file = "typescript-error-contracts.md"
 when = "Read when defining, propagating, documenting, or testing failures and cancellation. Classify expected failures by recovery action, preserve data and causes, recognize shared contracts structurally, and check ownership before cancellation cleanup."
 
 [[rules]]
-title = "Failure propagation example"
-file = "typescript-failure-examples.md"
-when = "Read when a worked example would clarify failure propagation, audience-specific rendering, or structural recognition."
-
-[[rules]]
-title = "Cancellation ownership example"
-file = "typescript-cancellation-example.md"
-when = "Read when a worked example would clarify abort reasons, replacement ownership, or cancellation race tests."
-
-[[rules]]
 title = "TypeScript workflows"
 file = "typescript-workflows.md"
 when = "Read when binding actions to state versions, defining derived-output validity, recovering partial transitions, or replacing modal interactions. Distinguish expired interaction identities from revision conflicts before prescribing recovery."

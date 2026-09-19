@@ -1,7 +1,7 @@
 # Pi failure signaling
 
-For a failure passed to different consumers, read the
-[worked example](typescript-failure-examples.md#preserve-a-conflict-until-its-consumer-renders-it).
+For a failure passed to different consumers, use the
+[inline example](typescript-error-contracts.md#give-remediation-text-one-owner-at-the-boundary-default).
 
 ## Failed tool results carry text only (Required)
 
