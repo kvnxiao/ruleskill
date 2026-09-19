@@ -3,101 +3,98 @@
 ## Decide outcome, thrown error, or abort reason before writing a throw (Default)
 
 Choose the channel from the operation's contract: return an expected answer as a result variant,
-throw a failure the caller must react to with a kind, and convey the caller's cancellation or
-supersession through the signal's abort reason. For example, a search returns `{ status: "empty" }`,
-a stale write throws a `conflict` with the current revision, and a replaced operation aborts with `{
-kind: "superseded" }`. The channel determines whether the caller consumes an answer, handles a
-failure, or stops work.
-[Abort reasons](https://nodejs.org/api/globals.html#abortcontrollerabortreason).
+throw a failure the caller must react to, and convey the caller's cancellation or supersession
+through the signal's abort reason. For example, a search returns `{ status: "empty" }`, a stale
+write throws a `conflict` with the current revision, and a replaced operation aborts with `{ kind:
+"superseded" }`. The channel determines whether the caller consumes an answer, handles a failure, or
+stops work. [Abort reasons](https://nodejs.org/api/globals.html#abortcontrollerabortreason).
 
 ## Define failure kinds by the caller's reaction (Default)
 
-Map each project-defined kind to one category and reaction:
+Define expected failure kinds by distinct recovery actions, such as correcting input, reloading a
+revision, or repairing an affected file. Keep a kind only when a consumer branches on it or a
+boundary reacts differently; do not create one kind per message. Keep unexpected defects outside the
+expected-failure contract and cancellation or supersession in the signal contract.
 
-| Category     | Reaction                                                       |
-| :----------- | :------------------------------------------------------------- |
-| Cancellation | Stop and clean up without a report.                            |
-| Superseded   | Discard the result without changing state.                     |
-| Refusal      | Report what failed for the caller to correct.                  |
-| Conflict     | Report the current version for the caller to reload and retry. |
-| Unavailable  | Preserve state and report the repair, with no automatic retry. |
-| Defect       | Fail loudly with no remediation and no retry advice.           |
+## Require the data each failure kind needs (Conditional)
 
-Keep a kind only when a consumer branches on it or a boundary reacts differently. A refusal whose
-text tells the user what to fix needs one kind, not one kind per message. Cancellation and
-supersession belong to the signal contract, not the thrown-error union.
-
-## Represent kinds as one error class with a string discriminant (Default)
-
-Use one class extending `Error`, a string-literal `kind` union, optional typed `data`, and the
-original `cause`. Validate the contract's shape and dispatch by `kind` in an exhaustive switch;
-module copies can have different class identities, so `instanceof` cannot identify the shared
-contract.
-[Class identity](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof),
-[exhaustiveness lint](https://typescript-eslint.io/rules/switch-exhaustiveness-check/).
+When callers need different recovery actions or structured information, use a discriminated union
+that requires each kind's data. For example, require supplied and current revisions for a conflict
+and an affected path for a file repair. Avoid an optional data bag that permits a conflict without
+revision data. Use a plain `Error` when callers only need to propagate and report the failure;
+introduce a custom class only when constructing or throwing typed failures benefits from it.
+[Discriminated unions](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions).
 
 ```ts
-type FailureKind = "refusal" | "conflict" | "unavailable" | "defect";
-type FailureData = { currentRevision: number };
-
-class OperationError extends Error {
-  readonly kind: FailureKind;
-  readonly data?: FailureData;
-
-  constructor(
-    kind: FailureKind,
-    message: string,
-    options: { data?: FailureData; cause?: unknown } = {},
-  ) {
-    super(message, { cause: options.cause });
-    this.name = "OperationError";
-    this.kind = kind;
-    if (options.data !== undefined) this.data = options.data;
-  }
-}
+type Failure = { message: string; cause?: unknown } & (
+  | { kind: "conflict"; data: { suppliedRevision: number; currentRevision: number } }
+  | { kind: "repair-file"; data: { path: string } }
+);
 ```
 
-Declare fields explicitly because `erasableSyntaxOnly` forbids constructor parameter properties.
-Under `strict`, a catch binding defaults to `unknown`; narrow it before reading fields. Treat a
-caught value outside the project error contract as a defect after checking cancellation. Accept
-structurally validated copies of the project's class across module boundaries. Translate a typed
-host failure into a kind while preserving its status and data, for example an unsaved persistence
-result into `unavailable` with the result as `cause`; do not rethrow only `result.message`.
-[Erasable syntax](https://www.typescriptlang.org/tsconfig/erasableSyntaxOnly.html),
-[strict catch bindings](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-4.html#defaulting-to-the-unknown-type-in-catch-variables---useunknownincatchvariables),
+Narrow caught `unknown` values before reading fields. At a shared boundary, validate the
+discriminant and each variant's required data, including domain constraints such as nonnegative
+safe-integer revisions or nonempty paths. Reject malformed shapes without guessing a kind from
+message text. Dispatch validated variants exhaustively.
+[Strict catch bindings](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-4.html#defaulting-to-the-unknown-type-in-catch-variables---useunknownincatchvariables),
+[exhaustiveness lint](https://typescript-eslint.io/rules/switch-exhaustiveness-check/).
+
+## Preserve failures through intermediate layers (Required)
+
+Catch only where the layer can translate a recognized failure, recover, release resources, or report
+at the final boundary. Rethrow unrecognized failures unchanged; a storage catch must not classify an
+unexpected `TypeError` as a repairable I/O failure. Use `finally` for unconditional resource release
+without replacing the original failure.
+
+When translating a recognized failure, retain its structured data and original cause. If an
+intermediate API returns a failure outcome, include the original error instead of retaining only its
+message. For example, return `{ outcome: "error", error }` and let the tool or UI boundary render
+it. Preserve a typed host result as the cause when converting it to a thrown failure; keep its
+status and data available to consumers. When no translation is needed, preserve object identity.
 [Error cause](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/cause).
 
 ## Give remediation text one owner at the boundary (Default)
 
-State what failed at the throw site and carry the data needed for the next step; compose remediation
-from the kind at the boundary that renders to a person or model. Never append a generic retry
-sentence to every error, and give defects no remediation. Render conflicts in a fixed form, for
-example `Current revision: 12. Reload this revision before retrying.` A reviewer must be able to
-trace each instruction to one kind and one wording owner. Exclude credentials and sensitive payloads
-from output, and report a failure once rather than logging it at every layer.
+State what failed at the throw site and include the data needed for recovery. Add recovery
+instructions once, at the boundary that knows the audience and permitted next action. For example, a
+tool may need a revision and reload instruction, while a terminal editor can show the rejected save
+beside a reload control. Preserve typed failures for programmatic callers. Never add generic retry
+advice or speculative remediation to unexpected defects. Exclude credentials and sensitive payloads
+from rendered output, and report a failure once rather than logging it at every layer.
 
 ## Keep cancellation and supersession on the signal (Required)
 
-Abort with `controller.abort(reason)`, compose owner and operation signals with `AbortSignal.any`,
-and call `signal.throwIfAborted()` before work and after each await. Before classifying a caught
-error, check the signal and its reason; a catch that converts failures to messages must rethrow the
-abort reason when the signal is aborted. For example, call `signal.throwIfAborted()` first in that
-catch. Distinguish `{ kind: "cancelled" }`, which may pause or clean up, from `{ kind: "superseded"
-}`, which silently discards the result without changing replacement state. Define precedence when
-both owners can abort: `AbortSignal.any` preserves the reason of the signal that triggered it, not a
-later reason. [Node.js AbortSignal](https://nodejs.org/api/globals.html#class-abortsignal).
+Treat cancellation as control flow and preserve the reason supplied to `controller.abort(reason)`.
+When either the caller or lifecycle owner can cancel work, compose their signals with
+`AbortSignal.any` where supported. Check cancellation before starting work and after awaits before
+further work or mutation, for example with `signal.throwIfAborted()`. At a catch boundary, inspect
+the operation's signal and reason before rendering a failure; propagate cancellation or return the
+documented cancelled outcome. Do not infer cancellation solely from an error's name or message.
+
+Recheck ownership before mutation, recovery, and cleanup. A composed signal retains its first abort
+reason; if cancellation precedes supersession, that reason does not establish ownership of current
+state. For example, compare the captured generation before pausing state, and clear a shared
+controller slot only if it still contains the captured controller. Release resources owned by the
+old operation without modifying replacement work. Preserve unrelated defects when cancellation races
+with failure, and define how the operation reports each outcome.
+[Node.js AbortSignal](https://nodejs.org/api/globals.html#class-abortsignal).
 
 ## Document the kinds a contract may throw (Required)
 
-For a callback or interface other code implements, list each thrown kind and the implementer's
-expected reaction in its doc comment, export the kind subset from the package entry point, and
-version the contract. For example, document `conflict` as requiring the current revision in `data`
-and a reload before retry. Consumers must be able to implement recovery without parsing messages;
+For a callback or interface other code implements, document each expected failure kind, required
+data, recovery action, and cancellation behavior. Export the contract's failure variants from the
+public entry point and version changes to the shared contract. Across extension-loader boundaries,
+provide structural recognition rather than relying solely on `instanceof`; separately loaded class
+copies need not share identity. For example, document `conflict` with both revisions and require
+reloading current input before retry. Consumers must be able to recover without parsing messages;
 apply the
 [public documentation rule](typescript-code-organization.md#document-every-exported-symbol-required).
 
 ## Assert kinds, not message text (Default)
 
-Assert `kind` and `data` in failure tests; assert text only where wording is itself the contract,
-such as a remediation table. For example, assert `kind: "conflict"` and `data: { currentRevision: 12
-}`. A message-substring assertion couples the test to wording and can pass on an unrelated error.
+Assert failure kinds, required data, and original causes through the public operation. For example,
+assert a conflict's supplied and current revisions, and use identity assertions for unchanged errors
+or retained causes. Test structural copies without shared class identity and reject unknown kinds,
+missing data, and invalid field values. Assert exact messages when wording is part of the contract,
+such as an audience's recovery instruction; message substrings alone do not establish
+classification.
