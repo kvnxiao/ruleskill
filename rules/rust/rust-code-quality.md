@@ -96,17 +96,14 @@ impl QueryBuilder {
     }
 }
 
-impl Lock {
-    #[must_use = "hold the guard for as long as the lock must remain acquired"]
-    pub fn acquire(&self) -> LockGuard<'_> { todo!() }
-}
+#[must_use = "hold the guard for as long as the lock must remain acquired"]
+pub struct LockGuard<'a> { lock: &'a Lock }
 ```
 
 Side-effecting functions whose return is incidental, simple getters, and expensive computations with
 no discard bug do not meet this criterion. Work cost alone does not justify the attribute.
 
 ```rust
-pub fn log_event(event: &Event) -> usize { todo!() }
 pub fn len(&self) -> usize { self.items.len() }
 ```
 
@@ -138,7 +135,7 @@ use camino::Utf8Path;
 
 pub fn read_config(path: impl AsRef<Utf8Path>) -> Result<Config> {
     let content = fs_err::read_to_string(path.as_ref())?;
-    todo!()
+    Config::parse(&content)
 }
 ```
 

@@ -89,7 +89,7 @@ impl UserId {
     pub fn as_u64(self) -> u64 { self.0 }
 }
 
-fn get_user(id: UserId) -> Result<User> { todo!() }
+let user = get_user(UserId(42))?;
 ```
 
 ## Safe Arithmetic (Required)

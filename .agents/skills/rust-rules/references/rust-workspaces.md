@@ -51,27 +51,24 @@ tokio = { version = "1.35", features = ["rt-multi-thread", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
 
-[workspace.lints.rust]
-unsafe_code = "forbid"
-missing_docs = "warn"
-missing_debug_implementations = "warn"
-
-[workspace.lints.clippy]
-pedantic = { level = "warn", priority = -2 }
-
 [workspace.package]
 edition = "2024"
 rust-version = "1.95"
 license = "MIT OR Apache-2.0"
 ```
 
-Member crates inherit the lint set via `[lints] workspace = true` (see the member-crate example
-below).
+Add the complete
+[required lint baseline](rust-lints-and-formatting.md#install-the-complete-lint-baseline-required)
+to this manifest under `[workspace.lints.rust]` and `[workspace.lints.clippy]`. This metadata
+example does not replace that configuration. Require every member, including a root package, to
+inherit the lint set via `[lints] workspace = true` (see the member-crate example below).
 
 ## Member Crate `Cargo.toml` (Default)
 
-Default member manifests to inherited workspace metadata, dependencies, and lints. Keep a field
-local when the member intentionally differs.
+Default member manifests to inherited workspace metadata and dependencies. Keep metadata local when
+the member intentionally differs. Require lint inheritance; obtain approval for a policy exception
+and preserve the remaining baseline. Cargo does not permit additional member lint entries alongside
+`workspace = true`.
 
 ```toml
 [package]
@@ -128,14 +125,12 @@ a dev-dependency would point back to its dependent. See
 
 ## Workspace Commands
 
-```bash
-cargo build
+Use the
+[shared local and CI tasks](rust-lints-and-formatting.md#share-local-fix-lint-and-ci-tasks-required)
+for formatting, linting, and tests. Keep compilation and Clippy on floating stable Rust and
+formatting on floating nightly rustfmt.
 
-cargo build -p my-cli
-
-cargo check --workspace
-
-cargo test -p my-core
-
-cargo test --all-features
+```sh
+cargo +stable build --workspace --locked
+cargo +stable test -p my-core --locked
 ```

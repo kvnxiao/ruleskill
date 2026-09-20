@@ -2,6 +2,10 @@
 paths:
   - "**/*.rs"
   - "**/Cargo.toml"
+  - "**/clippy.toml"
+  - "**/.clippy.toml"
+  - "**/rustfmt.toml"
+  - "**/.rustfmt.toml"
 ---
 
 # Rust Rules

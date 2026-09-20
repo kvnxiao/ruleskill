@@ -64,7 +64,8 @@ such as `FxHash`. Maps keyed by untrusted input must retain a HashDoS-resistant 
 
 ```rust
 use rustc_hash::FxHasher;
-use std::{collections::HashMap, hash::BuildHasherDefault};
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
 
 type FxHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 ```

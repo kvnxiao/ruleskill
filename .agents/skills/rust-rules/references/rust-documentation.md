@@ -17,9 +17,13 @@ structures are omitted.
 ///
 /// # Errors
 ///
-/// Returns [`NameError::Empty`] if `input` contains no visible characters.
-pub fn normalize_name(input: &str) -> Result<AccountName, NameError> {
-    todo!()
+/// Returns [`NameError::Empty`] if `input` is empty after trimming whitespace.
+pub fn normalize_name(input: &str) -> Result<String, NameError> {
+    let name = input.trim();
+    if name.is_empty() {
+        return Err(NameError::Empty);
+    }
+    Ok(name.to_owned())
 }
 ```
 
@@ -56,8 +60,9 @@ need a fixed skeleton.
 //! - [`Time`]: a wall-clock time.
 //!
 //! ```
+//! use my_crate::civil::Date;
 //! use my_crate::civil::date;
-//! let d = date(2024, 3, 14);
+//! const DATE: Date = const { date(2024, 3, 14) };
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -76,7 +81,8 @@ For a published library, the crate root:
 
 - Lists what the crate supports and does not support, with each unsupported feature linked to a
   tracking issue.
-- States the panic policy ("APIs that panic by design are few and clearly documented as such").
+- States the [runtime panic policy](rust-api-design.md#use-fallible-runtime-constructors-required)
+  and documents any explicitly approved exceptions.
 - Includes a short cookbook of runnable, task-oriented examples.
 
 ## Long-Form Rationale via `include_str!` (Conditional)

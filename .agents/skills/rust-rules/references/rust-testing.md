@@ -5,6 +5,24 @@ description: "Rust testing; insta snapshots, table and file-driven tests, invari
 
 # Testing
 
+## Keep test failures diagnostic (Required)
+
+Use unit-returning test functions and descriptive `expect` messages for fallible setup. Apply the
+[test lint configuration](rust-lints-and-formatting.md#configure-test-allowances-required) and keep
+other baseline restrictions active. Put test-only helpers that need the configured allowances in
+`#[cfg(test)]` modules; keep other shared helpers fallible.
+
+```rust
+#[test]
+fn parses_decimal_port() {
+    let port = "8080".parse::<u16>().expect("fixture contains a valid port");
+    assert_eq!(port, 8080);
+}
+```
+
+When an error variant or payload is part of the contract, assert it explicitly. Use `is_ok()` or
+`is_err()` when only success or failure matters, and include the result in the failure message.
+
 ## Centralize snapshot settings in one macro (Default)
 
 Default `insta` assertions to one project macro when snapshots share settings such as redactions,
@@ -32,12 +50,13 @@ functions. Keep separate tests when their setup or failure contracts differ.
 ```rust
 use test_case::test_case;
 
+#[cfg(test)]
 #[test_case(Rule::NoSlotsInStrSubclass, Path::new("SLOT000.py"))]
 #[test_case(Rule::NoSlotsInTupleSubclass, Path::new("SLOT001.py"))]
-fn rules(rule: Rule, path: &Path) -> Result<()> {
-    let diagnostics = test_path(path, &settings::for_rule(rule))?;
+fn rules(rule: Rule, path: &Path) {
+    let diagnostics = test_path(path, &settings::for_rule(rule))
+        .expect("fixture must produce diagnostics");
     assert_diagnostics!(format!("{}_{}", rule.noqa_code(), path.display()), diagnostics);
-    Ok(())
 }
 ```
 
@@ -108,7 +127,8 @@ use my_crate::Error;
 When a type is hot or ABI-critical, lock its size and required trait surface at compile time.
 
 ```rust
-use static_assertions::{assert_eq_size, assert_impl_all};
+use static_assertions::assert_eq_size;
+use static_assertions::assert_impl_all;
 
 assert_eq_size!(NodeId, Option<NodeId>);
 assert_impl_all!(NodeId: Ord, Send, Sync);

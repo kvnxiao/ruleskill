@@ -109,7 +109,8 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 the choice.
 
 ```rust
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 
 fn load(path: &Utf8Path) -> Result<Config> {
     let text = fs_err::read_to_string(path).context(format!("reading {path}"))?;
