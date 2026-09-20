@@ -5,6 +5,10 @@ description: "Required Rust lint baseline, scoped exceptions, conditional restri
 
 # Lints and Formatting
 
+For async code, use the
+[async verification rules](rust-async.md#verify-async-contracts-deterministically-required)
+alongside the baseline; review lifecycle and cancellation contracts beyond lint coverage.
+
 ## Install the complete lint baseline (Required)
 
 When bootstrapping a Rust project, install the complete configuration below in `Cargo.toml`. For a
@@ -225,6 +229,24 @@ disallowed-methods = [
 When documentation uses identifiers that `doc_markdown` should accept as prose, add the project's
 identifiers to `doc-valid-idents` and include `".."` to preserve Clippy's built-in list. Do not copy
 another project's domain vocabulary.
+
+## Check tracing guards across await (Required)
+
+When a project uses `tracing`, add these entries to `clippy.toml`, preserving any existing invalid
+types:
+
+```toml
+await-holding-invalid-types = [
+    "tracing::span::Entered",
+    "tracing::span::EnteredSpan",
+]
+```
+
+The baseline's `clippy::all` enables `await_holding_invalid_type`, and the shared `-D warnings`
+check rejects these guards across await points. Apply the
+[tracing context rule](rust-async.md#preserve-tracing-context-and-field-privacy-required) when
+fixing diagnostics. See
+[Clippy's invalid-type configuration](https://doc.rust-lang.org/clippy/lint_configuration.html#await-holding-invalid-types).
 
 ## Commit the complete nightly rustfmt configuration (Required)
 

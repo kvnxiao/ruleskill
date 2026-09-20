@@ -1,11 +1,11 @@
 ---
 name: rust-rules
-description: "Use for Rust implementation, review, API design, testing, error handling, dependencies, documentation, linting, formatting, performance, and workspace structure."
+description: "Use for Rust implementation, review, API design, async and concurrency, testing, error handling, diagnostics, dependencies, documentation, linting, formatting, performance, and workspace structure."
 ---
 
 # Rust Rules
 
-Use for Rust implementation, review, API design, testing, error handling, dependencies, documentation, linting, formatting, performance, and workspace structure.
+Use for Rust implementation, review, API design, async and concurrency, testing, error handling, diagnostics, dependencies, documentation, linting, formatting, performance, and workspace structure.
 
 ## Rule Strength
 
@@ -16,6 +16,7 @@ Use for Rust implementation, review, API design, testing, error handling, depend
 ## Rule References
 
 - [API design](references/rust-api-design.md): Read when adding or reviewing public APIs, constructors, traits, macros, unsafe code, features, or no_std behavior.
+- [Async and concurrency](references/rust-async.md): Read when choosing async APIs or runtimes, spawning tasks, handling cancellation and shutdown, bounding work, sharing state, setting deadlines and retries, tracing operations, or testing async behavior.
 - [Code quality](references/rust-code-quality.md): Read when implementing or reviewing Rust code for maintainability, idioms, module shape, naming, and readability, or when deriving collection and package metadata.
 - [Defensive programming](references/rust-defensive-programming.md): Read when handling invariants, input validation, panics, assertions, boundaries, and failure modes.
 - [Dependencies](references/rust-dependencies.md): Read when adding, updating, configuring, or evaluating Rust crate dependencies and feature flags.

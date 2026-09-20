@@ -5,6 +5,10 @@ description: "Rust testing; insta snapshots, table and file-driven tests, invari
 
 # Testing
 
+For async code, apply the
+[deterministic async checks](rust-async.md#verify-async-contracts-deterministically-required) and
+[Tokio virtual-time guidance](rust-async.md#use-virtual-time-for-timer-logic-default).
+
 ## Keep test failures diagnostic (Required)
 
 Use unit-returning test functions and descriptive `expect` messages for fallible setup so a setup
