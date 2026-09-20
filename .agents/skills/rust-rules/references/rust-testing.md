@@ -7,10 +7,11 @@ description: "Rust testing; insta snapshots, table and file-driven tests, invari
 
 ## Keep test failures diagnostic (Required)
 
-Use unit-returning test functions and descriptive `expect` messages for fallible setup. Apply the
-[test lint configuration](rust-lints-and-formatting.md#configure-test-allowances-required) and keep
-other baseline restrictions active. Put test-only helpers that need the configured allowances in
-`#[cfg(test)]` modules; keep other shared helpers fallible.
+Use unit-returning test functions and descriptive `expect` messages for fallible setup so a setup
+failure reports its expectation and source location. Apply the
+[test lint configuration](rust-lints-and-formatting.md#configure-clippy-and-test-allowances-required)
+and keep other baseline restrictions active. Put test-only helpers that need the configured
+allowances in `#[cfg(test)]` modules; keep other shared helpers fallible.
 
 ```rust
 #[test]
@@ -48,17 +49,28 @@ When cases share one assertion path, default to a parameterized test instead of 
 functions. Keep separate tests when their setup or failure contracts differ.
 
 ```rust
-use test_case::test_case;
-
 #[cfg(test)]
-#[test_case(Rule::NoSlotsInStrSubclass, Path::new("SLOT000.py"))]
-#[test_case(Rule::NoSlotsInTupleSubclass, Path::new("SLOT001.py"))]
-fn rules(rule: Rule, path: &Path) {
-    let diagnostics = test_path(path, &settings::for_rule(rule))
-        .expect("fixture must produce diagnostics");
-    assert_diagnostics!(format!("{}_{}", rule.noqa_code(), path.display()), diagnostics);
+mod tests {
+    use test_case::test_case;
+
+    #[test_case("80", 80)]
+    #[test_case("443", 443)]
+    fn parses_port(text: &str, expected: u16) {
+        let port = text.parse::<u16>().expect("fixture contains a valid port");
+        assert_eq!(port, expected);
+    }
 }
 ```
+
+## Property tests for invariants (Conditional)
+
+When parsers, serializers, or numeric operations have properties that hold over many inputs, use
+`proptest` to exercise those properties and shrink failures. Assert an independent invariant, such
+as a serialization round trip, rather than reproducing the implementation's algorithm. Keep explicit
+examples for known boundaries and error contracts.
+
+Commit the generated `proptest-regressions` files so discovered failures replay in later runs. See
+[Proptest failure persistence](https://proptest-rs.github.io/proptest/proptest/failure-persistence.html).
 
 ## File-driven tests with `datatest-stable` (Conditional)
 
@@ -96,15 +108,16 @@ fn ui() {
 }
 ```
 
-```toml
-[toolchain]
-components = ["rust-src"]
-```
+Add `rust-src` to the components in the
+[committed toolchain file](rust-lints-and-formatting.md#commit-the-complete-nightly-rustfmt-configuration-required)
+and to the stable installation command in CI.
 
-When expected diagnostics drift after a deliberate toolchain update, run `TRYBUILD=overwrite cargo
-test`, inspect the diff, and commit the accepted output. When a project treats exact diagnostic text
-as a compatibility contract, pin the Rust toolchain and update it through a reviewed maintenance
-process. Trybuild does not require nightly; see its
+When a project treats exact diagnostic text as a compatibility contract, pin a stable release for
+that UI-test suite and run it in a separate shared local and CI task. Exclude that suite from the
+floating-stable test task and keep other checks on the baseline toolchains. When expected
+diagnostics change after a deliberate toolchain update, run the suite's test task with
+`TRYBUILD=overwrite`, inspect the diff, and commit the accepted output. Trybuild does not require
+nightly; see its
 [workflow and troubleshooting guidance](https://github.com/dtolnay/trybuild#workflow).
 
 ## Verify `no_std` support on a target without `std` (Required)

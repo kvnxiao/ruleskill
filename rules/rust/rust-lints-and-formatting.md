@@ -8,20 +8,24 @@ description: "Required Rust lint baseline, scoped exceptions, conditional restri
 ## Install the complete lint baseline (Required)
 
 When bootstrapping a Rust project, install the complete configuration below in `Cargo.toml`. For a
-workspace, use `[workspace.lints.rust]` and `[workspace.lints.clippy]` instead, and set `[lints]
-workspace = true` in every member, including a root package. Keep the baseline in one manifest
-location; apply the same policy to application and library crates.
+workspace, use `[workspace.lints.rust]`, `[workspace.lints.clippy]`, and `[workspace.lints.rustdoc]`
+instead, and set `[lints] workspace = true` in every member, including a root package. Keep the
+baseline in one manifest location; apply the same policy to application and library crates.
 
 ```toml
 [lints.rust]
 unsafe_code = "forbid"
 unsafe_op_in_unsafe_fn = "deny"
 missing_docs = "warn"
+unreachable_pub = "warn"
+unnameable_types = "warn"
+elided_lifetimes_in_paths = "warn"
 
 [lints.clippy]
 all = { level = "warn", priority = -2 }
 pedantic = { level = "warn", priority = -2 }
 cargo = { level = "warn", priority = -2 }
+correctness = { level = "deny", priority = -1 }
 
 multiple_crate_versions = "allow"
 cast_precision_loss = "allow"
@@ -85,11 +89,25 @@ large_stack_arrays = "deny"
 needless_pass_by_value = "warn"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "deny"
+missing_crate_level_docs = "warn"
 ```
 
 Use the negative group priority so individual settings override group membership. Select restriction
 lints individually; do not enable `clippy::restriction` as a group. See
 [Clippy lint configuration](https://doc.rust-lang.org/clippy/usage.html#lint-configuration).
+
+Keep correctness lints at `deny` even when Clippy runs without `-D warnings`. Ordinary Cargo build
+and run commands do not run Clippy. Retain the individually selected nursery lint
+`debug_assert_with_mut_call` to catch mutation inside debug assertions; nursery membership does not
+require nightly Clippy.
+
+Use private or `pub(crate)` visibility for internal items. Re-export types that callers must name;
+use the sealed-trait exception below for an intentionally unnameable sealing trait. Give each crate
+root, including integration test crates under `tests/`, a concise `//!` description of its contract.
 
 Keep Cargo metadata checks enabled. Mark intentionally unpublished packages `publish = false`;
 Clippy skips their publication metadata by default. Allow duplicate dependency versions and inspect
@@ -98,21 +116,32 @@ Clippy skips their publication metadata by default. Allow duplicate dependency v
 and
 [dependency duplication](https://doc.rust-lang.org/cargo/reference/resolver.html#version-incompatibility-hazards).
 
-## Configure test allowances (Required)
+## Configure Clippy and test allowances (Required)
 
 Commit this `clippy.toml` at the project or workspace root:
 
 ```toml
 allow-expect-in-tests = true
 allow-print-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+avoid-breaking-exported-api = false
+excessive-nesting-threshold = 4
+max-fn-params-bools = 1
 ```
 
 Default test functions to returning `()` and use descriptive `expect` messages for fallible setup.
 Keep shared helpers fallible or place test-only helpers in `#[cfg(test)]` modules. Apply the
 allowances only in contexts Clippy recognizes as tests; a helper's location under `tests/` alone
-does not establish that context. Keep the remaining restrictions active in tests, including
-`unwrap_used` and `indexing_slicing`. See
+does not establish that context. Permit indexing and explicit panic for test failures; keep
+`unwrap_used` and all other baseline restrictions active. See
 [test configuration](https://doc.rust-lang.org/clippy/lint_configuration.html#allow-expect-in-tests).
+
+Lint exported APIs during bootstrap with `avoid-breaking-exported-api = false`. Before applying a
+suggested API change to an existing published library, review compatibility and obtain approval for
+any necessary lint exception. Keep the nesting threshold at four and permit at most one boolean
+parameter; use named states for independent flags. See
+[Clippy configuration](https://doc.rust-lang.org/clippy/lint_configuration.html#avoid-breaking-exported-api).
 
 ## Limit exceptions to their approved scope (Required)
 
@@ -122,10 +151,16 @@ smallest applicable item and state the concrete contract that permits the operat
 expectations when the lint stops firing. Keep `unfulfilled_lint_expectations` enabled and do not
 substitute broad `allow` attributes.
 
+When a diagnostic occurs only under a feature or target condition, attach the expectation with the
+same condition, such as `#[cfg_attr(feature = "cli", expect(clippy::print_stdout, reason = "CLI
+output lists packages"))]`. Passing the checks does not establish compliance with contracts that
+require code review.
+
 | Condition                                                                                     | Permitted exception                                                                                                                                                                                                        |
 | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A function implements CLI output or diagnostics                                               | Expect only the `print_stdout` or `print_stderr` lint that fires in that function.                                                                                                                                         |
 | A build script emits Cargo directives or a function implements another stdout/stderr protocol | Scope the corresponding printing expectation to the protocol-emitting function.                                                                                                                                            |
+| A public trait in a private module intentionally seals another public trait                   | Expect `unnameable_types` only on the sealing trait; keep ordinary return and argument types nameable.                                                                                                                     |
 | An invalid literal is rejected during forced compile-time evaluation                          | Keep rejection in a const evaluation context; request approval if a lint suppression is still needed.                                                                                                                      |
 | The user approves unsafe implementation in a crate                                            | Change the applicable `unsafe_code` policy from `forbid` to `deny`, then scope expectations to the approved implementation and satisfy the [unsafe obligations](rust-api-design.md#unsafe-soundness-obligations-required). |
 
@@ -153,18 +188,29 @@ and
 ## Enable project-specific restrictions only when needed (Conditional)
 
 Enable the following restrictions only when their stated requirements apply. Set the corresponding
-lint in the Clippy manifest table and document the requirement.
+lint in the Clippy manifest table unless the row names a Rust lint, and document the requirement.
 
-| Requirement                                                                            | Setting                        |
-| -------------------------------------------------------------------------------------- | ------------------------------ |
-| Integer-to-float conversions must preserve exact values                                | `cast_precision_loss = "deny"` |
-| Floating-point comparisons against constants must use a domain-defined error tolerance | `float_cmp_const = "deny"`     |
-| Iteration order affects reproducible output or other observable behavior               | `iter_over_hash_type = "deny"` |
+| Requirement                                                                            | Setting                                                         |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Integer-to-float conversions must preserve exact values                                | `cast_precision_loss = "deny"`                                  |
+| Floating-point comparisons against constants must use a domain-defined error tolerance | `float_cmp_const = "deny"`                                      |
+| Iteration order affects reproducible output or other observable behavior               | `iter_over_hash_type = "deny"`                                  |
+| A public library exposes types that callers need to inspect in diagnostics             | `missing_debug_implementations = "warn"` in the Rust lint table |
+| Numeric code needs lint coverage for arithmetic on untrusted or unbounded values       | `arithmetic_side_effects = "deny"`                              |
+
+For public libraries, default to `Debug` implementations on public types and enable the
+corresponding Rust lint. Redact sensitive fields in a manual implementation. Apply the lint at the
+library crate root when a shared manifest also governs unrelated application targets.
+
+When enabling `arithmetic_side_effects`, configure `arithmetic-side-effects-allowed` only for domain
+types whose operations have the required semantics. Keep the
+[safe arithmetic contract](rust-defensive-programming.md#safe-arithmetic-required) mandatory even
+when this lint is not enabled.
 
 For approximate numeric work, choose conversions and tolerances from the numerical contract. Keep
 ordinary `float_cmp` active; seek approval for a necessary exact comparison it flags. Sort hash
-collection output only where ordering matters. Use Clippy's default size thresholds unless an
-approved project requirement establishes different limits.
+collection output only where ordering matters. Keep Clippy's other thresholds at their defaults
+unless an approved project requirement establishes different limits.
 
 When a project requires injectable environment or filesystem access, enable `disallowed_methods =
 "deny"` and configure the actual adapter API in `clippy.toml`. Treat this as a conditional example,
@@ -205,15 +251,37 @@ floating stable Rust for compilation, tests, and Clippy, and floating nightly fo
 any MSRV check separate from the stable lint task. See
 [rustfmt configuration](https://github.com/rust-lang/rustfmt/blob/master/Configurations.md).
 
+Commit `rust-toolchain.toml` so unqualified build commands select stable:
+
+```toml
+[toolchain]
+channel = "stable"
+profile = "minimal"
+components = ["clippy"]
+```
+
+Configure editor formatting to use nightly rustfmt as well. For rust-analyzer, use this editor
+setting; other editors must invoke the equivalent formatter command:
+
+```json
+{
+  "rust-analyzer.rustfmt.overrideCommand": ["rustup", "run", "nightly", "rustfmt"]
+}
+```
+
+The override runs `rustfmt` with source on stdin, not `cargo fmt`. See
+[rust-analyzer formatter configuration](https://rust-analyzer.github.io/book/configuration.html#rust-analyzer.rustfmt.overrideCommand).
+
 ## Share local fix, lint, and CI tasks (Required)
 
-Provide local tasks that apply formatting, apply Clippy fixes, check lints, and run tests. Use the
-same toolchain channels, target and feature coverage, and strict checks locally and in CI. Install
-or update the floating toolchains with:
+Provide local tasks that apply formatting, apply Clippy fixes, check lints, build documentation,
+check dependencies, and run tests. Use the same toolchain channels, target and feature coverage, and
+strict checks locally and in CI. Install or update the floating toolchains with:
 
 ```sh
 rustup toolchain install stable --profile minimal --component clippy
 rustup toolchain install nightly --profile minimal --component rustfmt
+cargo +stable install --locked cargo-audit cargo-machete
 ```
 
 For a project using `just`, use these recipes. Adapt them to an existing task runner without
@@ -238,14 +306,52 @@ fix:
 test:
     cargo +stable test --workspace --all-features --locked
 
-check: lint test
+doc:
+    RUSTDOCFLAGS="${RUSTDOCFLAGS:-} -D warnings" cargo +stable doc --workspace --all-features --no-deps --locked
+
+dependencies:
+    cargo +stable audit
+    cargo +stable machete
+
+check: lint test doc dependencies
 ```
 
 When features cannot be enabled together, replace `--all-features` with explicit supported
-combinations and use those same combinations for local fixes, linting, tests, and CI. Keep doctests
-in test coverage. Have CI install the toolchains and invoke the shared tasks rather than maintain
-separate Cargo commands. Review the fix diff; a successful fix task must finish with strict lint
-verification.
+combinations and use those same combinations for local fixes, linting, documentation, tests, MSRV
+checks, and CI. Keep doctests in test coverage. Have CI install the toolchains and invoke the shared
+tasks rather than maintain separate Cargo commands. Review the fix diff; a successful fix task must
+finish with strict lint verification.
+
+Use equivalent advisory and unused-dependency tools when the project already standardizes on them;
+keep them in the shared local and CI tasks. Configure license and dependency-source policy from the
+project's requirements. See
+[dependency evaluation](rust-dependencies.md#evaluate-before-adding-default).
+
+Provide a separate MSRV task that reads the selected member's resolved `rust_version` from Cargo
+metadata. This `just` example requires Bash and `jq`; run it from the workspace root. In CI, invoke
+`just check-msrv PACKAGE` for every member covered by the compatibility promise, including a root
+package. Keep this job separate from stable Clippy:
+
+```just
+[positional-arguments]
+check-msrv package:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    metadata=$(cargo +stable metadata --no-deps --format-version 1 --locked)
+    msrv=$(jq -er --arg name "$1" '
+        .workspace_members as $members
+        | .packages[]
+        | select(.id as $id | $members | index($id))
+        | select(.name == $name)
+        | .rust_version // error("selected package must declare rust-version")
+    ' <<< "$metadata")
+    rustup toolchain install "$msrv" --profile minimal
+    cargo +"$msrv" check --package "$1" --all-targets --all-features --locked
+```
+
+The metadata value resolves workspace inheritance. Keep the target and feature scope aligned with
+the declared compatibility promise. See
+[Cargo metadata](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html).
 
 Enforce `-D warnings` in both the local lint task and CI. Keep `#![deny(warnings)]` out of source.
 Treat warnings from new stable Clippy releases and formatting changes from new nightly releases as

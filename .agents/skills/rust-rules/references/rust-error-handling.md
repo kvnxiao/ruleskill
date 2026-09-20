@@ -104,6 +104,11 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 ## Add context: eager vs lazy (Default)
 
+Preserve the underlying error while propagating it: use `#[from]`, `#[source]`, or a context wrapper
+so callers can inspect the source chain. Convert it to text at presentation or serialization
+boundaries, or when an explicit boundary contract requires a textual representation. Keep the
+original error available within the diagnostic path when the external representation omits it.
+
 `.context(v)` evaluates its argument eagerly, on every call including the success path.
 `.with_context(|| ...)` defers it until an error occurs. The message construction cost determines
 the choice.

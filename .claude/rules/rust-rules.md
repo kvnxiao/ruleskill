@@ -6,6 +6,7 @@ paths:
   - "**/.clippy.toml"
   - "**/rustfmt.toml"
   - "**/.rustfmt.toml"
+  - "**/rust-toolchain.toml"
 ---
 
 # Rust Rules

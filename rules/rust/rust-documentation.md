@@ -62,7 +62,7 @@ need a fixed skeleton.
 //! ```
 //! use my_crate::civil::Date;
 //! use my_crate::civil::date;
-//! const DATE: Date = const { date(2024, 3, 14) };
+//! const DATE: Date = date(2024, 3, 14);
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -84,6 +84,12 @@ For a published library, the crate root:
 - States the [runtime panic policy](rust-api-design.md#use-fallible-runtime-constructors-required)
   and documents any explicitly approved exceptions.
 - Includes a short cookbook of runnable, task-oriented examples.
+
+When the README and crate documentation serve the same audience, share the content with `#![doc =
+include_str!("../README.md")]`; eligible Rust blocks then run as doctests. Keep separate documents
+when repository setup and API usage need different material. Run the
+[shared documentation check](rust-lints-and-formatting.md#share-local-fix-lint-and-ci-tasks-required)
+to catch broken intra-doc links and malformed markup.
 
 ## Long-Form Rationale via `include_str!` (Conditional)
 

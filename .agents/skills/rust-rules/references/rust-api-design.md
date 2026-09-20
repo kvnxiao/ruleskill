@@ -11,16 +11,19 @@ These patterns keep public interfaces ergonomic for callers and compatible with 
 
 When a public API benefits from overload-like call ergonomics, accept `impl Into<Options>` and
 provide a small family of `From` implementations. The simple call can pass a bare value, while
-richer calls pass a tuple or the full struct.
+richer calls pass the full struct with named fields.
 
 ```rust
-pub struct RoundOptions { smallest: Unit, increment: i64 }
+/// Configure the unit and step used when rounding a span.
+pub struct RoundOptions {
+    /// Select the smallest retained unit.
+    pub smallest: Unit,
+    /// Select the number of units in each rounding step.
+    pub increment: i64,
+}
 
 impl From<Unit> for RoundOptions {
     fn from(smallest: Unit) -> Self { Self { smallest, increment: 1 } }
-}
-impl From<(Unit, i64)> for RoundOptions {
-    fn from((smallest, increment): (Unit, i64)) -> Self { Self { smallest, increment } }
 }
 
 impl Span {
@@ -57,6 +60,10 @@ date.with()
 A derived `PartialEq` compares field by field. Default to a semantic comparison or omit equality
 when values can be equivalent despite different representations. Derive equality when structural
 equality is the intended contract.
+
+When implementing `Hash`, ensure equal values hash equally. When implementing ordering traits, keep
+`PartialOrd`, `Ord`, and equality consistent. Derive these traits only when fieldwise behavior
+matches all implemented contracts.
 
 ```rust
 impl PartialEq for Zoned {
@@ -97,7 +104,8 @@ provide a fallible alternative.
 let literal = Date::new(2024, 2, 29)?;
 let parsed = Date::new(year, month, day)?;
 
-const NEW_YEAR: Date = const { date(2025, 1, 1) };
+const NEW_YEAR: Date = date(2025, 1, 1);
+let anniversary = const { date(2025, 3, 14) };
 ```
 
 ## Extension traits for literal ergonomics (Conditional)
@@ -122,6 +130,7 @@ pub trait Context<T>: private::Sealed {
 }
 
 mod private {
+    #[expect(unnameable_types, reason = "only this crate may implement the public trait")]
     pub trait Sealed {}
     impl<T, E: std::error::Error> Sealed for Result<T, E> {}
 }

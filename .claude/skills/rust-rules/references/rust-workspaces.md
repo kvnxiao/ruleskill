@@ -27,12 +27,16 @@ my-project/
 ├── my-cli/
 │   ├── Cargo.toml
 │   └── src/
-└── my-utils/
+└── my-protocol/
     ├── Cargo.toml
     └── src/
 ```
 
 Root-level members keep paths short and expose crate boundaries directly.
+
+Split a crate when it creates a required public API boundary, isolates dependencies or a proc-macro
+target, or improves measured build parallelism. Use modules when the responsibility can stay within
+one dependency and publication boundary.
 
 ## Workspace Root `Cargo.toml` (Default)
 
@@ -43,7 +47,7 @@ resolver `"1"`. See
 
 ```toml
 [workspace]
-members = ["my-core", "my-cli", "my-utils"]
+members = ["my-core", "my-cli", "my-protocol"]
 resolver = "3"
 
 [workspace.dependencies]
@@ -59,9 +63,10 @@ license = "MIT OR Apache-2.0"
 
 Add the complete
 [required lint baseline](rust-lints-and-formatting.md#install-the-complete-lint-baseline-required)
-to this manifest under `[workspace.lints.rust]` and `[workspace.lints.clippy]`. This metadata
-example does not replace that configuration. Require every member, including a root package, to
-inherit the lint set via `[lints] workspace = true` (see the member-crate example below).
+to this manifest under `[workspace.lints.rust]`, `[workspace.lints.clippy]`, and
+`[workspace.lints.rustdoc]`. This metadata example does not replace that configuration. Require
+every member, including a root package, to inherit the lint set via `[lints] workspace = true` (see
+the member-crate example below).
 
 ## Member Crate `Cargo.toml` (Default)
 
@@ -129,6 +134,10 @@ Use the
 [shared local and CI tasks](rust-lints-and-formatting.md#share-local-fix-lint-and-ci-tasks-required)
 for formatting, linting, and tests. Keep compilation and Clippy on floating stable Rust and
 formatting on floating nightly rustfmt.
+
+Keep build profiles in the root manifest and follow the
+[profile override rules](rust-performance.md#release-debug-information-default). Run the shared
+`check-msrv` task for each member covered by the workspace's compatibility policy.
 
 ```sh
 cargo +stable build --workspace --locked
