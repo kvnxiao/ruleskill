@@ -21,10 +21,10 @@ pub fn process_user_input(input: &str) -> Result<ProcessedData> {
             constraint: "must not be empty".to_string(),
         });
     }
-    if input.len() > MAX_INPUT_LENGTH {
+    if input.len() > MAX_INPUT_BYTES {
         return Err(MyLibraryError::ValidationError {
             field: "input".to_string(),
-            constraint: format!("must not exceed {MAX_INPUT_LENGTH} characters"),
+            constraint: format!("must not exceed {MAX_INPUT_BYTES} bytes"),
         });
     }
     Ok(ProcessedData::new(input))

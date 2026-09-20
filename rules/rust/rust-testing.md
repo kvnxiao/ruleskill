@@ -107,20 +107,22 @@ as a compatibility contract, pin the Rust toolchain and update it through a revi
 process. Trybuild does not require nightly; see its
 [workflow and troubleshooting guidance](https://github.com/dtolnay/trybuild#workflow).
 
-## Verify `no_std` with a real `no_std` crate (Required)
+## Verify `no_std` support on a target without `std` (Required)
 
-A `#[cfg]` alone won't catch an accidental `std::` path. Add a separate crate that is genuinely
-`#![no_std]` and depends on yours with `default-features = false`.
+When a library promises `no_std` support, check the library and its dependencies on a supported
+target without the standard library. Disable default features and check each promised feature
+combination separately. For a library supporting Cortex-M4 bare-metal targets:
 
-```toml
-[dependencies]
-my-crate = { path = "../..", default-features = false }
+```sh
+rustup target add --toolchain stable thumbv7em-none-eabi
+cargo +stable check -p my-crate --lib --no-default-features --target thumbv7em-none-eabi --locked
 ```
 
-```rust
-#![no_std]
-use my_crate::Error;
-```
+Choose the target from the library's supported platforms. If the library exposes an `alloc` tier,
+also check it with `--features alloc`. Run the same target and feature checks locally and in CI. A
+host-built `#![no_std]` consumer can still link `std` through dependencies; use the target check to
+verify the portability claim. See the
+[Rust Reference on `no_std`](https://doc.rust-lang.org/reference/names/preludes.html#the-no_std-attribute).
 
 ## Compile-time size and trait assertions (Conditional)
 

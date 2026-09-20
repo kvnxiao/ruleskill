@@ -104,7 +104,14 @@ pub mod _documentation {
 When a crate uses nightly-only documentation attributes, use a crate-specific cfg name instead of
 the shared `docsrs` name. Another crate can otherwise enable the shared cfg unexpectedly.
 
+Register the name with `check-cfg` in the existing Rust lint table. For a workspace, put the lint
+entry in `[workspace.lints.rust]` so members inherit it. Keep the docs.rs metadata in the package
+manifest.
+
 ```toml
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs_mycrate)'] }
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs_mycrate"]
@@ -113,3 +120,6 @@ rustdoc-args = ["--cfg", "docsrs_mycrate"]
 ```rust
 #![cfg_attr(docsrs_mycrate, feature(doc_cfg))]
 ```
+
+See
+[Cargo's custom cfg registration](https://doc.rust-lang.org/rustc/check-cfg/cargo-specifics.html).

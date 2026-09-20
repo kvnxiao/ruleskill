@@ -25,6 +25,7 @@ cargo = { level = "warn", priority = -2 }
 
 multiple_crate_versions = "allow"
 cast_precision_loss = "allow"
+must_use_candidate = "allow"
 
 unwrap_used = "deny"
 expect_used = "deny"

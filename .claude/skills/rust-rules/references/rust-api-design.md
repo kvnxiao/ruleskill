@@ -227,12 +227,26 @@ Each `unsafe` block must state its safety invariant, and each `unsafe fn` must d
 obligations in a `# Safety` section. Enable `unsafe_op_in_unsafe_fn`, keep unsafe blocks minimal,
 and wrap raw unsafe operations behind safe public abstractions.
 
-```rust
-#![deny(unsafe_op_in_unsafe_fn)]
+For an approved FFI boundary with `unsafe_code = "deny"`, state the caller's obligations for the
+entire operation:
 
-// Safety: `ptr` is non-null and points to an initialized `T`.
-let value = unsafe { &*ptr };
+```rust
+/// Read a length supplied by an FFI caller.
+///
+/// # Safety
+///
+/// `ptr` must be non-null, aligned, and valid for reading one initialized `u32`.
+/// The allocation must remain live and its contents must not change during this call.
+#[expect(unsafe_code, reason = "FFI callers provide storage under the documented contract")]
+pub unsafe fn read_length(ptr: *const u32) -> u32 {
+    // SAFETY: The caller guarantees live, aligned, initialized storage without concurrent mutation.
+    unsafe { ptr.read() }
+}
 ```
+
+When an operation creates a reference from a raw pointer, require valid storage and compliance with
+aliasing rules for the reference's full lifetime. See
+[pointer-to-reference requirements](https://doc.rust-lang.org/std/ptr/index.html#pointer-to-reference-conversion).
 
 ## `unsafe` project policy (Required)
 

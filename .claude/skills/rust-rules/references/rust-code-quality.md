@@ -89,7 +89,6 @@ needs no additional annotation.
 pub struct QueryBuilder { filters: Vec<Filter> }
 
 impl QueryBuilder {
-    #[must_use]
     pub fn filter(mut self, filter: Filter) -> Self {
         self.filters.push(filter);
         self
@@ -101,7 +100,10 @@ pub struct LockGuard<'a> { lock: &'a Lock }
 ```
 
 Side-effecting functions whose return is incidental, simple getters, and expensive computations with
-no discard bug do not meet this criterion. Work cost alone does not justify the attribute.
+no discard bug do not meet this criterion. Work cost alone does not justify the attribute. Keep
+`clippy::must_use_candidate` allowed in the
+[lint baseline](rust-lints-and-formatting.md#install-the-complete-lint-baseline-required) and apply
+the attribute according to the discard contract.
 
 ```rust
 pub fn len(&self) -> usize { self.items.len() }

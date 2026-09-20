@@ -47,9 +47,6 @@ constraint:
 - **Behavioral dependency on a specific version.** You rely on a quirk that isn't part of the
   crate's contract and could shift across patches. Prefer fixing your code over pinning, but pin if
   the fix is non-trivial.
-- **`cargo install` distribution.** Binaries published via `cargo install` ignore `Cargo.lock` by
-  default unless `--locked` is passed; if you can't guarantee `--locked`, pinning is the only way to
-  lock end-user versions.
 - **Resolver conflict resolution.** A transitive-version conflict requires a specific version to
   keep the dep graph valid.
 - **Tightly-coupled internal crate pair.** A facade crate that re-exports a private helper relying
@@ -70,6 +67,11 @@ For a temporary pin, add an adjacent comment with its removal condition and issu
 lasting pin such as a coupled internal crate pair, record the policy in project documentation. If no
 named constraint applies, use a caret range; the lockfile already fixes resolved versions for
 reproducible builds.
+
+For binaries distributed through `cargo install`, document `cargo install --locked <crate>` to use
+the packaged lockfile. Pinning a direct dependency does not pin its transitive dependencies; Cargo
+can still select newer versions within their declared ranges. See
+[Cargo installation and lockfiles](https://doc.rust-lang.org/cargo/commands/cargo-install.html#dealing-with-the-lockfile).
 
 ## Enable Only Needed Features (Default)
 

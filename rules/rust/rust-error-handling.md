@@ -75,7 +75,7 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Error {
-    inner: Option<Arc<ErrorInner>>,
+    inner: Arc<ErrorInner>,
 }
 
 struct ErrorInner {
@@ -88,7 +88,7 @@ enum ErrorKind { NotFound }
 impl Error {
     /// Return whether the operation failed because a resource was absent.
     pub fn is_not_found(&self) -> bool {
-        matches!(self.inner.as_deref().map(|i| &i.kind), Some(ErrorKind::NotFound))
+        matches!(self.inner.kind, ErrorKind::NotFound)
     }
 }
 ```
@@ -113,8 +113,6 @@ use anyhow::Context;
 use anyhow::Result;
 
 fn load(path: &Utf8Path) -> Result<Config> {
-    let text = fs_err::read_to_string(path).context(format!("reading {path}"))?;
-
     let text = fs_err::read_to_string(path).with_context(|| format!("reading {path}"))?;
 
     toml::from_str(&text).context("parsing config")
@@ -155,7 +153,7 @@ impl Error {
     #[inline(never)]
     fn new(kind: ErrorKind) -> Error {
         Error {
-            inner: Some(Arc::new(ErrorInner { kind, source: None })),
+            inner: Arc::new(ErrorInner { kind, source: None }),
         }
     }
 }

@@ -40,15 +40,15 @@ for value in 0..1000 {
 
 ## Borrow or consume collections intentionally (Default)
 
-Borrow a collection when it remains in use, and consume it with `into_iter()` when ownership can
-move to the loop.
+Borrow a collection when it remains in use, and pass it by value to a `for` loop when ownership can
+move. Use `into_iter()` when constructing an iterator chain that consumes the collection.
 
 ```rust
 for item in &collection {
     process(item);
 }
 
-for item in collection.into_iter() {
+for item in collection {
     consume(item);
 }
 ```
