@@ -20,10 +20,23 @@ The default error style depends on whether the caller branches on the failure.
 - **Libraries** whose callers react differently to distinct failures default to an owned error type,
   usually derived with `thiserror`.
 
+Apply the same caller-based choice to internal application crates. Use `anyhow` when their callers
+only report failures; use typed errors when callers need to classify failures and recover.
+
 The derive crate behind a public error type is an implementation detail, so switching between a
 hand-written `Error` implementation and `thiserror` need not change the API. Changing a public
 function's declared return type remains an API change, including a change from `anyhow::Error` to a
 typed error.
+
+## Write composable error messages (Default)
+
+Write concise lowercase error messages without terminal punctuation, preserving the spelling of
+identifiers and proper names. For example, use `invalid port` rather than `Invalid port.`.
+
+When a wrapper exposes an underlying error through `source()`, describe only the wrapper's context
+in `Display`. Let the reporting boundary format the source chain once. For example, use `reading
+config.toml` as the context and retain the I/O error as its source. See the
+[standard error conventions](https://doc.rust-lang.org/std/error/trait.Error.html).
 
 ## Typed errors: opaque wrapper over a private repr (Default)
 
