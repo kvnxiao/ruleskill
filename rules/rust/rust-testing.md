@@ -28,6 +28,14 @@ fn parses_decimal_port() {
 When an error variant or payload is part of the contract, assert it explicitly. Use `is_ok()` or
 `is_err()` when only success or failure matters, and include the result in the failure message.
 
+## Group integration tests when binary overhead matters (Conditional)
+
+When many integration-test binaries add material linking or execution overhead, group related tests
+as modules under one integration-test entry point, such as `tests/integration/main.rs`. Keep
+separate binaries when tests require different harnesses, target configuration, or process
+isolation. See
+[Cargo's integration-test layout guidance](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#integration-tests).
+
 ## Centralize snapshot settings in one macro (Default)
 
 Default `insta` assertions to one project macro when snapshots share settings such as redactions,
@@ -141,17 +149,55 @@ host-built `#![no_std]` consumer can still link `std` through dependencies; use 
 verify the portability claim. See the
 [Rust Reference on `no_std`](https://doc.rust-lang.org/reference/names/preludes.html#the-no_std-attribute).
 
+## Check released library APIs (Conditional)
+
+When a released library promises compatibility, run `cargo-semver-checks` against the last release
+in the supported release line. Select the baseline explicitly for reproducible checks; for example:
+
+```sh
+cargo +stable semver-checks --package my-crate --baseline-version 1.2.3
+```
+
+Use `--baseline-rev` for a release Git revision when a registry version is unavailable. Check the
+features and targets covered by the compatibility promise. A passing scan does not establish full
+compatibility; review behavioral contracts separately. Resolve reported incompatibilities or make
+the required breaking release. See
+[baseline selection and coverage limits](https://github.com/obi1kenobi/cargo-semver-checks#readme).
+
+## Check supported feature configurations (Conditional)
+
+When a crate exposes feature choices, use `cargo-hack` to check supported configurations without
+development dependencies. For a crate whose features each work independently:
+
+```sh
+cargo +stable hack check --package my-crate --each-feature --no-dev-deps --locked
+```
+
+Include default and no-default-feature builds when supported. For interacting features, use
+`--feature-powerset` or an explicit supported matrix; individual-feature checks do not cover every
+combination. Exclude unsupported combinations explicitly and retain behavior tests for supported
+combinations. Avoid concurrent manifest edits while `--no-dev-deps` temporarily removes and restores
+development dependencies. See
+[cargo-hack's feature checks](https://github.com/taiki-e/cargo-hack#--each-feature).
+
+For both compatibility and feature checks, install the applicable tool with `cargo +stable install
+--locked` and add a task shared by local development and CI. Follow the
+[shared task policy](rust-lints-and-formatting.md#share-local-fix-lint-and-ci-tasks-required).
+
 ## Compile-time size and trait assertions (Conditional)
 
-When a type is hot or ABI-critical, lock its size and required trait surface at compile time.
+When a type is hot or ABI-critical, assert its required size and trait bounds at compile time. Use a
+const assertion for size constraints:
 
 ```rust
-use static_assertions::assert_eq_size;
-use static_assertions::assert_impl_all;
+use std::mem::size_of;
 
-assert_eq_size!(NodeId, Option<NodeId>);
-assert_impl_all!(NodeId: Ord, Send, Sync);
+const _: () = assert!(size_of::<NodeId>() == size_of::<Option<NodeId>>());
 ```
+
+Use generic bounds for positive trait assertions, as in the
+[auto-trait tests](#auto-trait-and-drop-count-tests-default). Add an assertion crate only when the
+required check needs capabilities these forms do not provide.
 
 ## Auto-trait and drop-count tests (Default)
 
