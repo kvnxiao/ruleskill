@@ -46,6 +46,12 @@ exception policy for intentional local-only native async traits. See
 [`async_fn_in_trait`](https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#async-fn-in-trait)
 and [dyn compatibility](https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility).
 
+When async methods need dynamic dispatch, consider
+[`async-trait`](https://docs.rs/async-trait/latest/async_trait/) for the boxed-future adapter. When
+callers need both local and `Send` trait variants, consider
+[`trait-variant`](https://docs.rs/trait-variant/latest/trait_variant/). Keep native signatures when
+neither capability is needed.
+
 ### Keep executor workers responsive (Required)
 
 Move blocking I/O and substantial uninterrupted CPU work off executor workers. Review synchronous
@@ -93,6 +99,11 @@ but leaves waiting tasks and their inputs unbounded. Acquire capacity before spa
 for any producers waiting to acquire that capacity. Test saturation and the selected overload
 outcome. See
 [backpressure](https://tokio.rs/tokio/tutorial/channels#backpressure-and-bounded-channels).
+
+When processing a stream of futures whose results may arrive in completion order, consider
+[`StreamExt::buffer_unordered(n)`](https://docs.rs/futures-util/latest/futures_util/stream/trait.StreamExt.html#method.buffer_unordered)
+with a positive concurrency limit. When independent scheduling requires a Tokio `JoinSet`, bound
+admission and drain completions during processing; completed tasks retain results until joined.
 
 ### Use bounded queues (Default)
 
@@ -172,6 +183,9 @@ subscribers for isolated tests. See
 [argument capture](https://docs.rs/tracing/latest/tracing/attr.instrument.html), and
 [library instrumentation](https://docs.rs/tracing/latest/tracing/#in-libraries).
 
+For projects using `tracing`, install the
+[guard lint configuration](rust-lints-and-formatting.md#check-tracing-guards-across-await-required).
+
 ### Verify async contracts deterministically (Required)
 
 Use explicit readiness/completion signals or controlled polling for ordering assertions. Do not
@@ -200,12 +214,43 @@ when that runner fits the project.
 
 ## Tokio-specific guidance
 
+### Keep synchronous runtime entry at explicit boundaries (Required)
+
+Within Tokio's async execution context, await futures instead of directly calling
+`Runtime::block_on` or `Handle::block_on`; those calls panic in that context. For a synchronous
+adapter, reuse an owned runtime or handle rather than constructing a runtime per operation. Choose
+runtime ownership for the adapter, application, or isolation requirement rather than a fixed count
+per process.
+
+When a synchronous API requires re-entry from a multithreaded Tokio runtime, use a documented bridge
+such as `block_in_place` with `Handle::block_on`. Account for `block_in_place` suspending concurrent
+branches within the same task, and its incompatibility with the current-thread runtime. See
+[runtime handles](https://docs.rs/tokio/latest/tokio/runtime/struct.Handle.html#method.block_on) and
+[`block_in_place`](https://docs.rs/tokio/latest/tokio/task/fn.block_in_place.html).
+
+For delays on executor workers, await `tokio::time::sleep` instead of calling `std::thread::sleep`.
+Keep blocking sleeps on dedicated or blocking-pool threads when the blocking operation requires
+them.
+
 ### Offload finite blocking work (Conditional)
 
 When finite blocking work needs offloading under Tokio, use `spawn_blocking` with the admission
 bound established before submission. Move any execution permit into the closure and retain it until
 the work finishes. The blocking-pool thread maximum does not bound queued submissions, and
 cancelling the async waiter must not release capacity while the closure still runs.
+
+In an owner's admission loop, retain the permit inside each submitted computation:
+
+```rust
+let permit = limit.clone().acquire_owned().await?;
+workers.spawn_blocking(move || {
+    let _permit = permit;
+    compute(input)
+});
+```
+
+Keep `workers` in the task owner and drain its completions while admitting work. The permit bounds
+submitted computations; separately bound waiting producers and results retained in the `JoinSet`.
 
 Use dedicated threads for persistent blocking loops. Add a specialized CPU executor such as Rayon
 only when its capabilities benefit the workload. Started `spawn_blocking` jobs cannot be aborted;
@@ -250,6 +295,30 @@ processing. When cancellation must preserve an unsent message, reserve capacity 
 value outside the cancelled future. See
 [`mpsc::Sender`](https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.Sender.html).
 
+Return the unsent value when cancellation wins or capacity reservation fails:
+
+```rust
+async fn send_or_retain<T>(
+    sender: &tokio::sync::mpsc::Sender<T>,
+    message: T,
+    shutdown: &tokio_util::sync::CancellationToken,
+) -> Option<T> {
+    let permit = tokio::select! {
+        biased;
+        () = shutdown.cancelled() => return Some(message),
+        result = sender.reserve() => match result {
+            Ok(permit) => permit,
+            Err(_) => return Some(message),
+        },
+    };
+    permit.send(message);
+    None
+}
+```
+
+Await this helper to its outcome when the value must be recovered; dropping the entire helper also
+drops its owned message. After reservation succeeds, send without another await point.
+
 Apply the [lock selection rule](#choose-locks-by-critical-section-behavior-default) to Tokio code.
 Tokio mutex guards can be held across `await`; verify the protected state remains valid on
 cancellation. See
@@ -267,3 +336,31 @@ automatically when the runtime has no work. Retain suitable integration tests fo
 multithread behavior. See [paused time](https://docs.rs/tokio/latest/tokio/time/fn.pause.html),
 [`advance`](https://docs.rs/tokio/latest/tokio/time/fn.advance.html), and
 [`yield_now` non-guarantees](https://docs.rs/tokio/latest/tokio/task/fn.yield_now.html#non-guarantees).
+
+When an assertion requires a registered, pending timer, signal readiness after its first poll:
+
+```rust
+#[tokio::test(start_paused = true)]
+async fn completes_after_registered_deadline() {
+    use std::future::Future;
+    use std::task::Poll;
+    use std::time::Duration;
+
+    let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
+    let worker = tokio::spawn(async move {
+        let timer = tokio::time::sleep(Duration::from_secs(5));
+        tokio::pin!(timer);
+        std::future::poll_fn(|cx| {
+            assert!(timer.as_mut().poll(cx).is_pending());
+            Poll::Ready(())
+        })
+        .await;
+        ready_tx.send(()).expect("test awaits timer readiness");
+        timer.await;
+    });
+    ready_rx.await.expect("worker registers its timer");
+    assert!(!worker.is_finished());
+    tokio::time::advance(Duration::from_secs(5)).await;
+    worker.await.expect("worker completes without panicking");
+}
+```

@@ -230,6 +230,24 @@ When documentation uses identifiers that `doc_markdown` should accept as prose, 
 identifiers to `doc-valid-idents` and include `".."` to preserve Clippy's built-in list. Do not copy
 another project's domain vocabulary.
 
+## Check tracing guards across await (Required)
+
+When a project uses `tracing`, add these entries to `clippy.toml`, preserving any existing invalid
+types:
+
+```toml
+await-holding-invalid-types = [
+    "tracing::span::Entered",
+    "tracing::span::EnteredSpan",
+]
+```
+
+The baseline's `clippy::all` enables `await_holding_invalid_type`, and the shared `-D warnings`
+check rejects these guards across await points. Apply the
+[tracing context rule](rust-async.md#preserve-tracing-context-and-field-privacy-required) when
+fixing diagnostics. See
+[Clippy's invalid-type configuration](https://doc.rust-lang.org/clippy/lint_configuration.html#await-holding-invalid-types).
+
 ## Commit the complete nightly rustfmt configuration (Required)
 
 Commit `.rustfmt.toml` or `rustfmt.toml` with all settings below. Set `edition` and `style_edition`
