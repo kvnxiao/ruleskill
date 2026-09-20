@@ -2,6 +2,11 @@
 paths:
   - "**/*.rs"
   - "**/Cargo.toml"
+  - "**/clippy.toml"
+  - "**/.clippy.toml"
+  - "**/rustfmt.toml"
+  - "**/.rustfmt.toml"
+  - "**/rust-toolchain.toml"
 ---
 
 # Rust Rules

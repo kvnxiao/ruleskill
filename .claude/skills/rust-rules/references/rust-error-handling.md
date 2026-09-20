@@ -75,7 +75,7 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Error {
-    inner: Option<Arc<ErrorInner>>,
+    inner: Arc<ErrorInner>,
 }
 
 struct ErrorInner {
@@ -88,7 +88,7 @@ enum ErrorKind { NotFound }
 impl Error {
     /// Return whether the operation failed because a resource was absent.
     pub fn is_not_found(&self) -> bool {
-        matches!(self.inner.as_deref().map(|i| &i.kind), Some(ErrorKind::NotFound))
+        matches!(self.inner.kind, ErrorKind::NotFound)
     }
 }
 ```
@@ -104,16 +104,20 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 ## Add context: eager vs lazy (Default)
 
+Preserve the underlying error while propagating it: use `#[from]`, `#[source]`, or a context wrapper
+so callers can inspect the source chain. Convert it to text at presentation or serialization
+boundaries, or when an explicit boundary contract requires a textual representation. Keep the
+original error available within the diagnostic path when the external representation omits it.
+
 `.context(v)` evaluates its argument eagerly, on every call including the success path.
 `.with_context(|| ...)` defers it until an error occurs. The message construction cost determines
 the choice.
 
 ```rust
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 
 fn load(path: &Utf8Path) -> Result<Config> {
-    let text = fs_err::read_to_string(path).context(format!("reading {path}"))?;
-
     let text = fs_err::read_to_string(path).with_context(|| format!("reading {path}"))?;
 
     toml::from_str(&text).context("parsing config")
@@ -154,7 +158,7 @@ impl Error {
     #[inline(never)]
     fn new(kind: ErrorKind) -> Error {
         Error {
-            inner: Some(Arc::new(ErrorInner { kind, source: None })),
+            inner: Arc::new(ErrorInner { kind, source: None }),
         }
     }
 }

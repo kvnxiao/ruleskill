@@ -5,6 +5,25 @@ description: "Rust testing; insta snapshots, table and file-driven tests, invari
 
 # Testing
 
+## Keep test failures diagnostic (Required)
+
+Use unit-returning test functions and descriptive `expect` messages for fallible setup so a setup
+failure reports its expectation and source location. Apply the
+[test lint configuration](rust-lints-and-formatting.md#configure-clippy-and-test-allowances-required)
+and keep other baseline restrictions active. Put test-only helpers that need the configured
+allowances in `#[cfg(test)]` modules; keep other shared helpers fallible.
+
+```rust
+#[test]
+fn parses_decimal_port() {
+    let port = "8080".parse::<u16>().expect("fixture contains a valid port");
+    assert_eq!(port, 8080);
+}
+```
+
+When an error variant or payload is part of the contract, assert it explicitly. Use `is_ok()` or
+`is_err()` when only success or failure matters, and include the result in the failure message.
+
 ## Centralize snapshot settings in one macro (Default)
 
 Default `insta` assertions to one project macro when snapshots share settings such as redactions,
@@ -30,16 +49,28 @@ When cases share one assertion path, default to a parameterized test instead of 
 functions. Keep separate tests when their setup or failure contracts differ.
 
 ```rust
-use test_case::test_case;
+#[cfg(test)]
+mod tests {
+    use test_case::test_case;
 
-#[test_case(Rule::NoSlotsInStrSubclass, Path::new("SLOT000.py"))]
-#[test_case(Rule::NoSlotsInTupleSubclass, Path::new("SLOT001.py"))]
-fn rules(rule: Rule, path: &Path) -> Result<()> {
-    let diagnostics = test_path(path, &settings::for_rule(rule))?;
-    assert_diagnostics!(format!("{}_{}", rule.noqa_code(), path.display()), diagnostics);
-    Ok(())
+    #[test_case("80", 80)]
+    #[test_case("443", 443)]
+    fn parses_port(text: &str, expected: u16) {
+        let port = text.parse::<u16>().expect("fixture contains a valid port");
+        assert_eq!(port, expected);
+    }
 }
 ```
+
+## Property tests for invariants (Conditional)
+
+When parsers, serializers, or numeric operations have properties that hold over many inputs, use
+`proptest` to exercise those properties and shrink failures. Assert an independent invariant, such
+as a serialization round trip, rather than reproducing the implementation's algorithm. Keep explicit
+examples for known boundaries and error contracts.
+
+Commit the generated `proptest-regressions` files so discovered failures replay in later runs. See
+[Proptest failure persistence](https://proptest-rs.github.io/proptest/proptest/failure-persistence.html).
 
 ## File-driven tests with `datatest-stable` (Conditional)
 
@@ -77,38 +108,42 @@ fn ui() {
 }
 ```
 
-```toml
-[toolchain]
-components = ["rust-src"]
-```
+Add `rust-src` to the components in the
+[committed toolchain file](rust-lints-and-formatting.md#commit-the-complete-nightly-rustfmt-configuration-required)
+and to the stable installation command in CI.
 
-When expected diagnostics drift after a deliberate toolchain update, run `TRYBUILD=overwrite cargo
-test`, inspect the diff, and commit the accepted output. When a project treats exact diagnostic text
-as a compatibility contract, pin the Rust toolchain and update it through a reviewed maintenance
-process. Trybuild does not require nightly; see its
+When a project treats exact diagnostic text as a compatibility contract, pin a stable release for
+that UI-test suite and run it in a separate shared local and CI task. Exclude that suite from the
+floating-stable test task and keep other checks on the baseline toolchains. When expected
+diagnostics change after a deliberate toolchain update, run the suite's test task with
+`TRYBUILD=overwrite`, inspect the diff, and commit the accepted output. Trybuild does not require
+nightly; see its
 [workflow and troubleshooting guidance](https://github.com/dtolnay/trybuild#workflow).
 
-## Verify `no_std` with a real `no_std` crate (Required)
+## Verify `no_std` support on a target without `std` (Required)
 
-A `#[cfg]` alone won't catch an accidental `std::` path. Add a separate crate that is genuinely
-`#![no_std]` and depends on yours with `default-features = false`.
+When a library promises `no_std` support, check the library and its dependencies on a supported
+target without the standard library. Disable default features and check each promised feature
+combination separately. For a library supporting Cortex-M4 bare-metal targets:
 
-```toml
-[dependencies]
-my-crate = { path = "../..", default-features = false }
+```sh
+rustup target add --toolchain stable thumbv7em-none-eabi
+cargo +stable check -p my-crate --lib --no-default-features --target thumbv7em-none-eabi --locked
 ```
 
-```rust
-#![no_std]
-use my_crate::Error;
-```
+Choose the target from the library's supported platforms. If the library exposes an `alloc` tier,
+also check it with `--features alloc`. Run the same target and feature checks locally and in CI. A
+host-built `#![no_std]` consumer can still link `std` through dependencies; use the target check to
+verify the portability claim. See the
+[Rust Reference on `no_std`](https://doc.rust-lang.org/reference/names/preludes.html#the-no_std-attribute).
 
 ## Compile-time size and trait assertions (Conditional)
 
 When a type is hot or ABI-critical, lock its size and required trait surface at compile time.
 
 ```rust
-use static_assertions::{assert_eq_size, assert_impl_all};
+use static_assertions::assert_eq_size;
+use static_assertions::assert_impl_all;
 
 assert_eq_size!(NodeId, Option<NodeId>);
 assert_impl_all!(NodeId: Ord, Send, Sync);
