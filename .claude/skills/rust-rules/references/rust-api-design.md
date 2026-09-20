@@ -7,6 +7,10 @@ description: "Public API design for libraries; ergonomic, semver-evolvable inter
 
 These patterns keep public interfaces ergonomic for callers and compatible with later evolution.
 
+For async interfaces, apply the
+[public future contracts](rust-async.md#establish-public-future-contracts-required) to runtime
+requirements, auto-trait bounds, and supported callers.
+
 ## Options struct + `impl Into` for overload-like ergonomics (Conditional)
 
 When a public API benefits from overload-like call ergonomics, accept `impl Into<Options>` and

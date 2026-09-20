@@ -5,6 +5,10 @@ description: "Required Rust lint baseline, scoped exceptions, conditional restri
 
 # Lints and Formatting
 
+For async code, use the
+[async verification rules](rust-async.md#verify-async-contracts-deterministically-required)
+alongside the baseline; review lifecycle and cancellation contracts beyond lint coverage.
+
 ## Install the complete lint baseline (Required)
 
 When bootstrapping a Rust project, install the complete configuration below in `Cargo.toml`. For a

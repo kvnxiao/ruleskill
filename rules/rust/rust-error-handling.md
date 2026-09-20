@@ -5,6 +5,12 @@ description: "Rust error handling; anyhow for apps versus thiserror for librarie
 
 # Error Handling
 
+For spawned work, apply the
+[task outcome rules](rust-async.md#own-spawned-work-and-its-outcomes-required) when propagating join
+failures and operation errors. Use the
+[retry contract](rust-async.md#retry-only-repeatable-operations-conditional) when classifying
+failures for another attempt.
+
 ## `anyhow` for applications, `thiserror` for libraries (Default)
 
 The default error style depends on whether the caller branches on the failure.

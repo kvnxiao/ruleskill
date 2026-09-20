@@ -1,12 +1,17 @@
 name = "rust"
 title = "Rust Rules"
-description = "Use for Rust implementation, review, API design, testing, error handling, dependencies, documentation, linting, formatting, performance, and workspace structure."
+description = "Use for Rust implementation, review, API design, async and concurrency, testing, error handling, diagnostics, dependencies, documentation, linting, formatting, performance, and workspace structure."
 paths = "**/*.rs,**/Cargo.toml,**/clippy.toml,**/.clippy.toml,**/rustfmt.toml,**/.rustfmt.toml,**/rust-toolchain.toml"
 
 [[rules]]
 title = "API design"
 file = "rust-api-design.md"
 when = "Read when adding or reviewing public APIs, constructors, traits, macros, unsafe code, features, or no_std behavior."
+
+[[rules]]
+title = "Async and concurrency"
+file = "rust-async.md"
+when = "Read when choosing async APIs or runtimes, spawning tasks, handling cancellation and shutdown, bounding work, sharing state, setting deadlines and retries, tracing operations, or testing async behavior."
 
 [[rules]]
 title = "Code quality"

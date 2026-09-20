@@ -8,6 +8,11 @@ description: "Rust performance guidance activated by profiling; borrowing, alloc
 The default representation is a readable standard-library type. Profiling or benchmarks activate
 specialized data structures, storage formats, and build profiles.
 
+For async workloads, apply the
+[executor responsiveness](rust-async.md#keep-executor-workers-responsive-required) and
+[resource admission](rust-async.md#bound-resources-at-admission-required) contracts before tuning
+performance.
+
 Choose a measurement tool for the question: `criterion` or `divan` for benchmarks, `samply` or
 `cargo flamegraph` for CPU profiles, and `dhat` for allocation measurements. Reuse the project's
 existing tools when they provide the needed evidence.
