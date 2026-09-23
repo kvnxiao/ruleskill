@@ -77,7 +77,7 @@ when = "Read when placing or naming a module, deciding what a module exports, do
 [[rules]]
 title = "TypeScript domain boundaries"
 file = "typescript-domain-boundaries.md"
-when = "Read when modeling workflow states, validating external data, comparing structured input by meaning, distinguishing identifiers or units, or designing public data contracts."
+when = "Read when modeling workflow states, declaring schemas for persisted or parsed data, validating external data, comparing structured input by meaning, distinguishing identifiers or units, or designing public data contracts."
 
 [[rules]]
 title = "TypeScript asynchronous work and errors"
