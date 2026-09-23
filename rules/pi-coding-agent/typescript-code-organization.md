@@ -29,9 +29,7 @@ module fails the test by construction, because its importers share no contract.
 
 Report a review finding for each of these conditions:
 
-- A function exceeds 80 lines.
 - A class has more than 8 mutable fields.
-- A module exceeds 500 lines.
 - The same helper is present in two or more modules.
 - A test asserts an internal call ordinal, such as requiring a private dependency's third call to
   receive a particular argument.
