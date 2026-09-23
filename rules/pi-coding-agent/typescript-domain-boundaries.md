@@ -30,6 +30,15 @@ explicitly empty, malformed, and unsupported input require different actions, pr
 distinctions.
 [TypeScript assertions](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions).
 
+## Derive persisted-record validation from schemas (Required)
+
+When the workspace declares a schema library, define every persisted record's contract with that
+library and derive runtime validation from the schema. Derive the TypeScript type from the same
+schema where the library supports it. Apply this requirement to internally produced records as well
+as persisted external API data; for example, validate a saved retry record through its schema before
+using it. Do not substitute a type assertion or a parallel hand-written validator for schema
+validation.
+
 ## Define omission, clearing, and replacement in update contracts (Default)
 
 When an API accepts partial updates, define the meaning of omitted fields, explicit `undefined`,

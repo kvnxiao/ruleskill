@@ -72,6 +72,14 @@ repetition. After reload or a related job's restart, failure, or destination cha
 cached result remains usable. Pass replayed results through the tool adapter and assert preserved
 draft privacy, submission state, output bounds, and failure status.
 
+## Inject faults through I/O capabilities (Required)
+
+For I/O fault injection, supply an injected I/O capability whose test implementation fails at the
+required boundary. For example, inject a storage capability that rejects a completion-record write
+after the mutation succeeds, then assert the recoverable outcome through public operations. Keep
+fault controls in the test implementation. Do not add test-only parameters, flags, or callbacks to
+production APIs.
+
 ## Exercise the lifecycle transitions the extension uses (Required)
 
 For session-owned resources, test repeated startup and shutdown, reload, and failed initialization.

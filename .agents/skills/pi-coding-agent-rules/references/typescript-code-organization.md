@@ -25,6 +25,21 @@ Apply the same test before splitting. When a typical change touches most of a mo
 splitting adds edit sites without reducing coupling; keep that module whole. A generic `utils`
 module fails the test by construction, because its importers share no contract.
 
+## Report size, duplication, and test-coupling thresholds (Default)
+
+Report a review finding for each of these conditions:
+
+- A function exceeds 80 lines.
+- A class has more than 8 mutable fields.
+- A module exceeds 500 lines.
+- The same helper is present in two or more modules.
+- A test asserts an internal call ordinal, such as requiring a private dependency's third call to
+  receive a particular argument.
+
+Use these thresholds to request review of responsibilities, shared ownership, or observable test
+contracts. Apply the cohesion and helper-promotion rules when choosing a remedy; a finding does not
+require a mechanical split or extraction.
+
 ## Let the manifest define the public surface (Default)
 
 Package `exports` entries are the encapsulation boundary: a path the manifest does not list cannot
