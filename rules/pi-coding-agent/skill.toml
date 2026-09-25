@@ -67,12 +67,12 @@ when = "Read when distributing Pi resources, declaring package dependencies, emb
 [[rules]]
 title = "TypeScript architecture"
 file = "typescript-architecture.md"
-when = "Read when separating domain logic from adapters, defining ownership and copy semantics, transforming derived data, deriving schema or registry metadata, or introducing an abstraction."
+when = "Read before adding or extending a workflow, and when separating domain logic from adapters, defining ownership and copy semantics, transforming derived data, deriving schema or registry metadata, or introducing an abstraction."
 
 [[rules]]
 title = "TypeScript code organization"
 file = "typescript-code-organization.md"
-when = "Read when placing or naming a module, deciding what a module exports, documenting an exported symbol, colocating a type with its validator, promoting a helper to shared code, or defining a package entry point."
+when = "Read before adding or extending a workflow, and when reviewing its responsibilities, placing or naming a module, deciding what a module exports, documenting an exported symbol, colocating a type with its validator, promoting a helper to shared code, or defining a package entry point."
 
 [[rules]]
 title = "TypeScript domain boundaries"
