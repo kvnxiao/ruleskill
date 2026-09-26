@@ -1,6 +1,6 @@
 name = "pi-coding-agent"
 title = "TypeScript and Pi Coding Agent Rules"
-description = "Use for developing and reviewing Pi Coding Agent extensions, tools, packages, TUI components, and SDK or RPC integrations, including TypeScript architecture, code organization, public API documentation, domain modeling, asynchronous work, thrown errors, remediation text, cancellation, performance, and testing."
+description = "Use for developing and reviewing Pi Coding Agent extensions, tools, packages, TUI components, and SDK or RPC integrations, including TypeScript architecture, code organization, public API documentation, domain modeling, asynchronous work, thrown errors, remediation text, cancellation, performance, testing, and Effect v4 integration where selected by the repository."
 paths = "**/*.ts,**/*.tsx,**/*.mts,**/*.cts,**/*.js,**/*.mjs,**/*.cjs,**/package.json,**/.pi/settings.json"
 
 # Pi citation baseline: v0.85.1. Revalidate linked contracts before changing the tag.
@@ -63,6 +63,11 @@ when = "Read when designing keyboard navigation, inline editing, question or rev
 title = "Pi packages and SDK"
 file = "pi-packages-and-sdk.md"
 when = "Read when distributing Pi resources, declaring package dependencies, embedding sessions, switching model or remote-tool integrations, or configuring resource discovery and working directories."
+
+[[rules]]
+title = "Effect v4 integration"
+file = "effect-v4-integration.md"
+when = "Read when assessing Effect under a repository adoption policy, implementing Effect v4 code, or reviewing its integration. Include synchronous work and data modeling; use the selected installation's guidance and preserve Pi host contracts."
 
 [[rules]]
 title = "TypeScript architecture"
