@@ -26,10 +26,10 @@ Install the CLI locally with `just install`. The installed CLI commands are:
 
 During development, the same commands can be run with `cargo run -- <command>`.
 
-Current input rule packs are `rust`, `github-actions`, `solidjs`, and `pi-coding-agent`. Output
-skill folders are named from the manifest name with a `-rules` suffix unless the name already ends
-in `-rules`, so these install as `rust-rules`, `github-actions-rules`, `solidjs-rules`, and
-`pi-coding-agent-rules`.
+Current input rule packs are `rust`, `github-actions`, `solidjs`, `pi-coding-agent`, and `python`.
+Output skill folders are named from the manifest name with a `-rules` suffix unless the name already
+ends in `-rules`, so these install as `rust-rules`, `github-actions-rules`, `solidjs-rules`,
+`pi-coding-agent-rules`, and `python-rules`.
 
 The default catalog root is the crate root from `CARGO_MANIFEST_DIR`. `RULESKILL_CATALOG_DIR` can
 point the CLI at a fixture catalog instead. Installs write into the current working directory, not
