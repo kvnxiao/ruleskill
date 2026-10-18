@@ -161,7 +161,7 @@ For lazy flattening, use a generator expression such as `(*post.tags for post in
 | Older approach                                         | Newer API (version added)                                                                                       |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `re.match(pattern, text)`                              | `re.prefixmatch(pattern, text)` (3.15); `re.match` is soft-deprecated                                           |
-| Hand-written chunking with slices                      | `itertools.batched(items, n)` (3.12); add `strict=True` (3.13) only when every batch must be full               |
+| Hand-written chunking with slices                      | `itertools.batched(items, n, strict=False)`; pass `strict=True` (3.13) only when every batch must be full       |
 | `os.walk` with string paths                            | `Path.walk()` (3.12)                                                                                            |
 | `shutil.copy2` and `shutil.move` with `Path` arguments | `Path.copy()` and `Path.copy_into()` with `preserve_metadata=True`, `Path.move()`, `Path.move_into()` (3.14)    |
 | `dataclasses.replace` on arbitrary objects             | `copy.replace()` (3.13)                                                                                         |
