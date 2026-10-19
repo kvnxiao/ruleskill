@@ -8,7 +8,10 @@ files are written under `.agents/skills/` or `.claude/skills/` in the directory 
 install <rule-pack>`. Rule packs that set `paths` also get a path-scoped `.claude/rules/` pointer
 for the Claude target.
 
-The catalog includes `rust`, `github-actions`, `solidjs`, and `pi-coding-agent`. The
+The catalog includes `rust`, `github-actions`, `solidjs`, `pi-coding-agent`, and `python`. The
+[Python pack](rules/python/skill.toml) targets Python 3.15 and later: it requires ruff and ty
+through uv, prescribes default libraries, and covers code organization, import cycles, API design,
+and Python pitfalls that linters do not catch. The
 [Pi Coding Agent pack](rules/pi-coding-agent/skill.toml) covers Pi extensions, tools, packages, TUI
 components, and SDK or RPC integrations, plus TypeScript architecture, code organization, domain
 boundaries, asynchronous work, performance, and testing decisions that require engineering judgment.
