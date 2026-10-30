@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use minijinja::Environment;
+use minijinja::{Environment, value::Serde};
 use serde::Serialize;
 
 pub(crate) fn render_template(
@@ -13,7 +13,7 @@ pub(crate) fn render_template(
     let rendered = env
         .get_template(name)
         .with_context(|| format!("failed to resolve template {name}"))?
-        .render(context)
+        .render(Serde(context))
         .with_context(|| format!("failed to render template {name}"))?;
 
     Ok(rendered.replace("\r\n", "\n"))
@@ -29,5 +29,18 @@ mod tests {
             .expect("template should render");
 
         assert_eq!(rendered, "first\nsecond\nthird");
+    }
+
+    #[test]
+    fn render_template_serializes_context() {
+        #[derive(serde::Serialize)]
+        struct Context {
+            name: &'static str,
+        }
+
+        let rendered = render_template("test", "Hello {{ name }}!", &Context { name: "world" })
+            .expect("template should render");
+
+        assert_eq!(rendered, "Hello world!");
     }
 }
