@@ -1,9 +1,14 @@
 name = "github-actions"
 title = "GitHub Actions Rules"
-description = "Use for authoring and reviewing GitHub Actions workflows, especially action version pinning and update policy."
+description = "Use for authoring and reviewing GitHub Actions workflows, including workflow design, dependency graphs, packaging, caches, required checks, and action versioning."
 paths = ".github/workflows/**"
 
 [[rules]]
 title = "GitHub Actions versioning"
 file = "github-actions-versioning.md"
 when = "Read when authoring or editing files under .github/workflows/."
+
+[[rules]]
+title = "GitHub Actions workflow design"
+file = "github-actions-workflow-design.md"
+when = "Read when designing or restructuring workflows, job dependencies, matrices, packaging triggers, caches, or required checks."
