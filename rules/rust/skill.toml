@@ -16,7 +16,7 @@ when = "Read when choosing async APIs or runtimes, spawning tasks, handling canc
 [[rules]]
 title = "Code quality"
 file = "rust-code-quality.md"
-when = "Read when implementing or reviewing Rust code for maintainability, idioms, module shape, naming, and readability, or when deriving collection and package metadata."
+when = "Read when implementing or reviewing Rust code for maintainability, state modeling, idioms, module shape, naming, and readability, or when deriving collection and package metadata."
 
 [[rules]]
 title = "Defensive programming"

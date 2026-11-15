@@ -1,6 +1,6 @@
 ---
 paths: **/*.{rs,toml}
-description: "General Rust code-quality patterns; edition and MSRV, derived metadata, enums over booleans and strings, #[must_use], and choosing function parameter types."
+description: "General Rust code-quality patterns; edition and MSRV, derived metadata, enums over booleans and strings, state modeling, #[must_use], and choosing function parameter types."
 ---
 
 # Code Quality Standards
@@ -77,6 +77,44 @@ pub enum ValidationMode { Lenient, Strict }
 
 fn process(data: &str, verbosity: Verbosity, validation: ValidationMode) {}
 ```
+
+## Represent valid state combinations explicitly (Required)
+
+When related fields in validated domain state represent mutually exclusive states or data valid only
+in certain states, use a representation that cannot express invalid combinations. Apply this
+requirement regardless of state count, even when existing control flow prevents those combinations
+from occurring.
+
+Allow raw input and incomplete builder values to represent combinations awaiting validation.
+Validate them at [input boundaries](rust-defensive-programming.md#input-validation-required) or in
+[`build()`](rust-api-design.md#deferred-validation-builder-required) before constructing domain
+state.
+
+Use enums with data stored only in variants where it is valid, or `Option<T>` when absence and
+presence express the complete state. Derive redundant flags from that state value. For example, this
+representation cannot express a finished job without its result or a job that is both running and
+finished:
+
+```rust
+enum JobState<T> {
+    Pending,
+    Running,
+    Finished(T),
+}
+```
+
+Use three or more mutually exclusive states of one entity or operation as a prompt to inspect
+conditionals for an implicit state machine. Look for phases and transitions encoded through
+combinations of fields. Count domain states rather than branches or independent flag combinations.
+
+Keep separate boolean fields for independent properties when every combination is valid. For
+example, keep `visible` and `enabled` separate when a control supports all four combinations. Do not
+merge fields solely because multiple modules or threads assign them. Follow the
+[scoped exception policy](rust-lints-and-formatting.md#limit-exceptions-to-their-approved-scope-required)
+when independent flags trigger `struct_excessive_bools`.
+
+An enum restricts representable state combinations; it does not enforce transition order. When order
+matters, enforce permitted transitions through the API.
 
 ## Prefer domain types after string boundaries (Default)
 
