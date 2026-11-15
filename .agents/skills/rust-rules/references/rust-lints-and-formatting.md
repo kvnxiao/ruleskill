@@ -160,6 +160,10 @@ same condition, such as `#[cfg_attr(feature = "cli", expect(clippy::print_stdout
 output lists packages"))]`. Passing the checks does not establish compliance with contracts that
 require code review.
 
+Apply the
+[state representation rule](rust-code-quality.md#represent-valid-state-combinations-explicitly-required)
+before suppressing `struct_excessive_bools`.
+
 | Condition                                                                                               | Permitted exception                                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A function implements CLI output or diagnostics                                                         | Expect only the `print_stdout` or `print_stderr` lint that fires in that function.                                                                                                                                         |
