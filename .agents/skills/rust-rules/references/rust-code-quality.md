@@ -1,6 +1,6 @@
 ---
 paths: **/*.{rs,toml}
-description: "General Rust code-quality patterns; edition and MSRV, derived metadata, enums over booleans and strings, #[must_use], and choosing function parameter types."
+description: "General Rust code-quality patterns; edition and MSRV, derived metadata, enums over booleans and strings, state modeling, #[must_use], and choosing function parameter types."
 ---
 
 # Code Quality Standards
@@ -77,6 +77,19 @@ pub enum ValidationMode { Lenient, Strict }
 
 fn process(data: &str, verbosity: Verbosity, validation: ValidationMode) {}
 ```
+
+## Model related state with enums (Default)
+
+Merge related fields into an enum when its variants express mutually exclusive states or enforce an
+invariant between the fields. Give each variant only the data valid in that state. For example,
+replace a job's `running` and `finished` flags with `Pending`, `Running`, and `Finished` variants.
+
+Keep separate boolean fields for independent properties when every combination is valid. For
+example, keep `visible` and `enabled` separate when a control supports all four combinations.
+Multiple modules or threads assigning fields is not, by itself, a reason to merge them into an enum.
+Follow the
+[scoped exception policy](rust-lints-and-formatting.md#limit-exceptions-to-their-approved-scope-required)
+when independent flags trigger `struct_excessive_bools`.
 
 ## Prefer domain types after string boundaries (Default)
 
